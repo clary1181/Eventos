@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "Eventos",
+    "slug": "eventos",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "app",
+    "scheme": "eventos",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
