@@ -1,18 +1,340 @@
-rules_version='2'
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 12, 9);
+
+    // ---------- Auxiliares ----------
+    function autenticado() { return request.auth != null; }
+    function miUid() { return request.auth.uid; }
+    function existePerfil(id) {
+      return exists(/databases/$(database)/documents/usuarios/$(id));
+    }
+    function perfil(id) {
+      return get(/databases/$(database)/documents/usuarios/$(id)).data;
+    }
+    function esRol(r) {
+      return autenticado() && existePerfil(miUid()) && perfil(miUid()).rol == r;
+    }
+    function esAdmin() { return esRol('administrador'); }
+    function organizadorVerificadoActivo() {
+      return esRol('organizador')
+        && perfil(miUid()).estadoVerificacion == 'aprobada'
+        && perfil(miUid()).estadoCuenta == 'activa';
+    }
+    function nuevo() { return request.resource.data; }
+    function cambios() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function soloCambian(campos) { return cambios().hasOnly(campos); }
+    function textoValido(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+
+    // ---------- usuarios ----------
+    match /usuarios/{id} {
+      allow read: if autenticado();
+
+      allow create: if autenticado() && miUid() == id
+        && nuevo().keys().hasOnly(['nombreUsuario','nombre','apellidos','rol','fotoUrl',
+             'biografia','redes','ciudad','estadoVerificacion','estaVerificado',
+             'estadoCuenta','promedioCalificacion','totalCalificaciones','creadoEn'])
+        && nuevo().keys().hasAll(['nombreUsuario','nombre','apellidos','rol','ciudad',
+             'estadoVerificacion','estaVerificado','estadoCuenta',
+             'promedioCalificacion','totalCalificaciones','creadoEn'])
+        && nuevo().rol in ['asistente','organizador']
+        && nuevo().nombreUsuario.matches('^[a-zA-Z0-9_.]{3,20}$')
+        && getAfter(/databases/$(database)/documents/nombresUsuario/$(nuevo().nombreUsuario.lower())).data.uid == miUid()
+        && textoValido(nuevo().nombre, 1, 50)
+        && textoValido(nuevo().apellidos, 1, 80)
+        && textoValido(nuevo().ciudad, 1, 60)
+        && nuevo().estadoVerificacion == 'sin_solicitud'
+        && nuevo().estaVerificado == false
+        && nuevo().estadoCuenta == 'activa'
+        && nuevo().promedioCalificacion == 0
+        && nuevo().totalCalificaciones == 0
+        && nuevo().creadoEn == request.time;
+
+      allow update: if autenticado() && miUid() == id
+        && soloCambian(['nombre','apellidos','fotoUrl','biografia','redes','ciudad'])
+        && textoValido(nuevo().nombre, 1, 50)
+        && textoValido(nuevo().apellidos, 1, 80)
+        && textoValido(nuevo().ciudad, 1, 60);
+
+      allow delete: if false;
+
+      match /privado/{doc} {
+        allow read: if autenticado() && (miUid() == id || esAdmin());
+
+        allow create: if autenticado() && miUid() == id && doc == 'perfil'
+          && nuevo().keys().hasOnly(['correo','fechaNacimiento','telefono','expoPushToken'])
+          && nuevo().keys().hasAll(['correo'])
+          && nuevo().correo == request.auth.token.email;
+
+        allow update: if autenticado() && miUid() == id
+          && soloCambian(['fechaNacimiento','telefono','expoPushToken']);
+
+        allow delete: if false;
+      }
+    }
+
+    // ---------- nombresUsuario ----------
+    match /nombresUsuario/{nombre} {
+      allow get: if autenticado();
+      allow create: if autenticado()
+        && nombre.matches('^[a-z0-9_.]{3,20}$')
+        && nuevo().keys().hasOnly(['uid'])
+        && nuevo().uid == miUid()
+        && !existePerfil(miUid())
+        && existsAfter(/databases/$(database)/documents/usuarios/$(miUid()));
+    }
+
+    // ---------- solicitudesVerificacion ----------
+    function solicitudValida(n) {
+      return textoValido(n.telefono, 7, 20)
+        && n.redes is list && n.redes.size() <= 5
+        && textoValido(n.descripcionActividad, 10, 500)
+        && n.documentos is map
+        && n.documentos.keys().hasAll(['identificacion'])
+        && (!('rfc' in n) || textoValido(n.rfc, 10, 13));
+    }
+
+    match /solicitudesVerificacion/{id} {
+      allow read: if autenticado() && (miUid() == id || esAdmin());
+
+      allow create: if esRol('organizador') && miUid() == id
+        && nuevo().keys().hasOnly(['organizadorId','estado','telefono','redes',
+             'descripcionActividad','rfc','documentos','reenvios','creadaEn','actualizadaEn'])
+        && nuevo().keys().hasAll(['organizadorId','estado','telefono','redes',
+             'descripcionActividad','documentos','reenvios','creadaEn','actualizadaEn'])
+        && nuevo().organizadorId == miUid()
+        && nuevo().estado == 'pendiente'
+        && nuevo().reenvios == 0
+        && nuevo().creadaEn == request.time
+        && nuevo().actualizadaEn == request.time
+        && solicitudValida(nuevo());
+
+      // El organizador solo corrige y reenvía cuando el admin pidió correcciones
+      allow update: if esRol('organizador') && miUid() == id
+        && resource.data.estado == 'correccion_requerida'
+        && soloCambian(['estado','telefono','redes','descripcionActividad','rfc',
+             'documentos','reenvios','actualizadaEn'])
+        && nuevo().estado == 'pendiente'
+        && nuevo().reenvios == resource.data.reenvios + 1
+        && nuevo().actualizadaEn == request.time
+        && solicitudValida(nuevo());
+
+      // El admin dictamina
+      allow update: if esAdmin()
+        && soloCambian(['estado','observaciones','revisadaEn','revisadaPor','actualizadaEn'])
+        && nuevo().revisadaPor == miUid()
+        && nuevo().revisadaEn == request.time
+        && nuevo().actualizadaEn == request.time
+        && (
+          (resource.data.estado == 'pendiente'
+            && nuevo().estado in ['correccion_requerida','aprobada','rechazada'])
+          || (resource.data.estado == 'correccion_requerida' && nuevo().estado == 'rechazada')
+        )
+        && (nuevo().estado == 'aprobada'
+            || textoValido(nuevo().get('observaciones', ''), 1, 500));
+
+      allow delete: if false;
+
+      match /historial/{h} {
+        allow read: if autenticado() && (miUid() == id || esAdmin());
+      }
+    }
+
+    // ---------- eventos ----------
+    function camposSensibles() {
+      return ['fechaInicio','fechaFin','lugar','direccion','ubicacion','precio',
+              'imagenUrl','imagenPublicId'];
+    }
+
+    function eventoValido(n) {
+      return textoValido(n.titulo, 3, 100)
+        && textoValido(n.descripcion, 10, 2000)
+        && textoValido(n.categoria, 1, 30)
+        && textoValido(n.lugar, 2, 100)
+        && textoValido(n.direccion, 5, 200)
+        && n.fechaInicio is timestamp && n.fechaFin is timestamp
+        && n.fechaFin > n.fechaInicio
+        && n.precio is number && n.precio >= 0 && n.precio <= 100000
+        && n.capacidad is int && n.capacidad > 0 && n.capacidad <= 100000
+        && textoValido(n.imagenUrl, 10, 500)
+        && textoValido(n.imagenPublicId, 1, 200)
+        && (!('ubicacion' in n) || n.ubicacion is latlng);
+    }
+
+    function cambioPropuestoValido(r, n, c) {
+      return !c.hasAny(['estadoCambio','cambioPropuesto'])
+        || (c.hasAll(['estadoCambio','cambioPropuesto'])
+            && r.estadoCambio in ['ninguno','requiere_correccion']
+            && n.estadoCambio == 'pendiente'
+            && n.cambioPropuesto is map
+            && n.cambioPropuesto.keys().hasOnly(camposSensibles().concat(['solicitadoEn']))
+            && n.cambioPropuesto.keys().hasAll(['solicitadoEn'])
+            && n.cambioPropuesto.size() > 1
+            && n.cambioPropuesto.solicitadoEn == request.time);
+    }
+
+    function actualizacionOrganizador() {
+      let r = resource.data;
+      let n = request.resource.data;
+      let c = cambios();
+      return r.organizadorId == miUid()
+        && organizadorVerificadoActivo()
+        && r.fechaFin > request.time
+        && c.hasOnly(['titulo','descripcion','categoria','capacidad','fechaInicio','fechaFin',
+             'lugar','direccion','ubicacion','precio','imagenUrl','imagenPublicId',
+             'estado','estadoCambio','cambioPropuesto','actualizadoEn'])
+        && n.actualizadoEn == request.time
+        && n.capacidad >= r.vendidas
+        && eventoValido(n)
+        && (c.hasAny(['fechaInicio','fechaFin']) ? n.fechaInicio > request.time : true)
+        && (
+          // A: todavía no es público
+          (r.estado in ['pendiente_aprobacion','requiere_correccion']
+            && !c.hasAny(['estadoCambio','cambioPropuesto'])
+            && n.estado == 'pendiente_aprobacion')
+          // B: aprobado sin ventas. Un cambio sensible lo regresa a revisión
+          || (r.estado == 'aprobado' && r.vendidas == 0
+            && !c.hasAny(['estadoCambio','cambioPropuesto'])
+            && n.estado == (c.hasAny(camposSensibles()) ? 'pendiente_aprobacion' : 'aprobado'))
+          // C: aprobado con ventas. Lo sensible va en cambioPropuesto
+          || (r.estado == 'aprobado' && r.vendidas > 0
+            && n.estado == 'aprobado'
+            && !c.hasAny(camposSensibles())
+            && cambioPropuestoValido(r, n, c))
+        );
+    }
+
+    function actualizacionAdmin() {
+      let r = resource.data;
+      let n = request.resource.data;
+      return esAdmin()
+        && cambios().hasOnly(['estado','observaciones','motivoRechazo','actualizadoEn'])
+        && r.estado == 'pendiente_aprobacion'
+        && n.actualizadoEn == request.time
+        && (n.estado == 'aprobado'
+            || (n.estado == 'requiere_correccion'
+                && textoValido(n.get('observaciones', ''), 1, 500))
+            || (n.estado == 'rechazado'
+                && textoValido(n.get('motivoRechazo', ''), 1, 500)));
+    }
+
+    match /eventos/{id} {
+      // Público si está aprobado; dueño y admin ven cualquier estado
+      allow read: if resource.data.estado == 'aprobado'
+        || (autenticado() && (resource.data.organizadorId == miUid() || esAdmin()));
+
+      allow create: if organizadorVerificadoActivo()
+        && nuevo().keys().hasOnly(['organizadorId','organizadorNombre','organizadorVerificado',
+             'titulo','descripcion','categoria','fechaInicio','fechaFin','lugar','direccion',
+             'ubicacion','precio','capacidad','vendidas','imagenUrl','imagenPublicId',
+             'estado','estadoCambio','promedioCalificacion','totalCalificaciones',
+             'creadoEn','actualizadoEn'])
+        && nuevo().keys().hasAll(['organizadorId','organizadorNombre','organizadorVerificado',
+             'titulo','descripcion','categoria','fechaInicio','fechaFin','lugar','direccion',
+             'precio','capacidad','vendidas','imagenUrl','imagenPublicId','estado',
+             'estadoCambio','promedioCalificacion','totalCalificaciones',
+             'creadoEn','actualizadoEn'])
+        && nuevo().organizadorId == miUid()
+        && nuevo().organizadorNombre == perfil(miUid()).nombre + ' ' + perfil(miUid()).apellidos
+        && nuevo().organizadorVerificado == true
+        && nuevo().estado == 'pendiente_aprobacion'
+        && nuevo().estadoCambio == 'ninguno'
+        && nuevo().vendidas == 0
+        && nuevo().promedioCalificacion == 0
+        && nuevo().totalCalificaciones == 0
+        && nuevo().creadoEn == request.time
+        && nuevo().actualizadoEn == request.time
+        && nuevo().fechaInicio > request.time
+        && eventoValido(nuevo());
+
+      allow update: if actualizacionOrganizador() || actualizacionAdmin();
+
+      allow delete: if false;
+    }
+
+    // ---------- entradas (solo backend escribe) ----------
+    match /entradas/{id} {
+      allow read: if autenticado()
+        && (resource.data.asistenteId == miUid()
+            || resource.data.organizadorId == miUid()
+            || esAdmin());
+      allow write: if false;
+    }
+
+    // ---------- favoritos ----------
+    match /favoritos/{id} {
+      allow read: if autenticado() && resource.data.asistenteId == miUid();
+      allow create: if esRol('asistente')
+        && nuevo().keys().hasOnly(['asistenteId','eventoId','creadoEn'])
+        && nuevo().asistenteId == miUid()
+        && textoValido(nuevo().eventoId, 1, 100)
+        && id == miUid() + '_' + nuevo().eventoId
+        && nuevo().creadoEn == request.time;
+      allow delete: if autenticado() && resource.data.asistenteId == miUid();
+      allow update: if false;
+    }
+
+    // ---------- reportes ----------
+    match /reportes/{id} {
+      allow read: if autenticado()
+        && (resource.data.reportanteId == miUid() || esAdmin());
+
+      allow create: if esRol('asistente')
+        && nuevo().keys().hasOnly(['eventoId','organizadorId','reportanteId','eventoTitulo',
+             'motivo','descripcion','estado','creadoEn'])
+        && nuevo().keys().hasAll(['eventoId','organizadorId','reportanteId','eventoTitulo',
+             'motivo','descripcion','estado','creadoEn'])
+        && nuevo().reportanteId == miUid()
+        && id == miUid() + '_' + nuevo().eventoId
+        && nuevo().estado == 'pendiente_moderacion'
+        && nuevo().motivo in ['informacion_falsa','spam','fraude','contenido_inapropiado','otro']
+        && textoValido(nuevo().descripcion, 5, 1000)
+        && get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.estado == 'aprobado'
+        && nuevo().organizadorId == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.organizadorId
+        && nuevo().eventoTitulo == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.titulo
+        && nuevo().creadoEn == request.time;
+
+      allow update, delete: if false;   // el admin cierra vía callable
+    }
+
+    // ---------- reportesOrganizador (la crea el backend) ----------
+    match /reportesOrganizador/{id} {
+      allow read: if autenticado()
+        && (resource.data.organizadorId == miUid() || esAdmin());
+
+      allow update: if autenticado() && resource.data.organizadorId == miUid()
+        && resource.data.get('respuestaOrganizador', null) == null
+        && soloCambian(['respuestaOrganizador','respondidoEn'])
+        && textoValido(nuevo().respuestaOrganizador, 1, 1000)
+        && nuevo().respondidoEn == request.time;
+
+      allow create, delete: if false;
+    }
+
+    // ---------- calificaciones (las escribe el callable) ----------
+    match /calificaciones/{id} {
+      allow read: if autenticado()
+        && (resource.data.oculta == false
+            || resource.data.asistenteId == miUid()
+            || esAdmin());
+
+      allow update: if esAdmin()
+        && soloCambian(['oculta'])
+        && nuevo().oculta is bool;
+
+      allow create, delete: if false;
+    }
+
+    // ---------- notificaciones (las crea el backend) ----------
+    match /notificaciones/{id} {
+      allow read: if autenticado() && resource.data.destinatarioId == miUid();
+      allow update: if autenticado() && resource.data.destinatarioId == miUid()
+        && soloCambian(['leida'])
+        && nuevo().leida is bool;
+      allow delete: if autenticado() && resource.data.destinatarioId == miUid();
+      allow create: if false;
     }
   }
 }

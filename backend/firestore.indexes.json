@@ -1,51 +1,46 @@
 {
-  // Example (Standard Edition):
-  //
-  // "indexes": [
-  //   {
-  //     "collectionGroup": "widgets",
-  //     "queryScope": "COLLECTION",
-  //     "fields": [
-  //       { "fieldPath": "foo", "arrayConfig": "CONTAINS" },
-  //       { "fieldPath": "bar", "mode": "DESCENDING" }
-  //     ]
-  //   },
-  //
-  //  "fieldOverrides": [
-  //    {
-  //      "collectionGroup": "widgets",
-  //      "fieldPath": "baz",
-  //      "indexes": [
-  //        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-  //      ]
-  //    },
-  //   ]
-  // ]
-  //
-  // Example (Enterprise Edition):
-  //
-  // "indexes": [
-  //   {
-  //     "collectionGroup": "reviews",
-  //     "queryScope": "COLLECTION_GROUP",
-  //     "apiScope": "MONGODB_COMPATIBLE_API",
-  //     "density": "DENSE",
-  //     "multikey": false,
-  //     "fields": [
-  //       { "fieldPath": "baz", "mode": "ASCENDING" }
-  //     ]
-  //   },
-  //   {
-  //     "collectionGroup": "items",
-  //     "queryScope": "COLLECTION_GROUP",
-  //     "apiScope": "MONGODB_COMPATIBLE_API",
-  //     "density": "SPARSE_ANY",
-  //     "multikey": true,
-  //     "fields": [
-  //       { "fieldPath": "baz", "mode": "ASCENDING" }
-  //     ]
-  //   },
-  // ]
-  "indexes": [],
+  "indexes": [
+    { "collectionGroup": "eventos", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "estado", "order": "ASCENDING" },
+      { "fieldPath": "fechaFin", "order": "ASCENDING" } ] },
+    { "collectionGroup": "eventos", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "estado", "order": "ASCENDING" },
+      { "fieldPath": "categoria", "order": "ASCENDING" },
+      { "fieldPath": "fechaFin", "order": "ASCENDING" } ] },
+    { "collectionGroup": "eventos", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "organizadorId", "order": "ASCENDING" },
+      { "fieldPath": "creadoEn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "eventos", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "estado", "order": "ASCENDING" },
+      { "fieldPath": "creadoEn", "order": "ASCENDING" } ] },
+    { "collectionGroup": "eventos", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "estadoCambio", "order": "ASCENDING" },
+      { "fieldPath": "actualizadoEn", "order": "ASCENDING" } ] },
+    { "collectionGroup": "entradas", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "asistenteId", "order": "ASCENDING" },
+      { "fieldPath": "creadaEn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "entradas", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "eventoId", "order": "ASCENDING" },
+      { "fieldPath": "creadaEn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "reportes", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "estado", "order": "ASCENDING" },
+      { "fieldPath": "creadoEn", "order": "ASCENDING" } ] },
+    { "collectionGroup": "reportesOrganizador", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "organizadorId", "order": "ASCENDING" },
+      { "fieldPath": "creadoEn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "calificaciones", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "eventoId", "order": "ASCENDING" },
+      { "fieldPath": "oculta", "order": "ASCENDING" },
+      { "fieldPath": "creadaEn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "favoritos", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "asistenteId", "order": "ASCENDING" },
+      { "fieldPath": "creadoEn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "notificaciones", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "destinatarioId", "order": "ASCENDING" },
+      { "fieldPath": "creadaEn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "solicitudesVerificacion", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "estado", "order": "ASCENDING" },
+      { "fieldPath": "creadaEn", "order": "ASCENDING" } ] }
+  ],
   "fieldOverrides": []
 }
