@@ -15,4 +15,17 @@ export const Colores = {
   exito: '#2E7D32',
   superposicionHero: 'rgba(72, 27, 140, 0.60)', // tinte morado sobre la foto
   fondoModal: 'rgba(20, 8, 45, 0.5)',
+
+  // Estados y fondos suaves (insignias, métricas, avisos)
+  exitoTexto: '#1B7F3B',
+  exitoFondo: '#E4F4E7',
+  advertencia: '#B4530A',
+  advertenciaFondo: '#FDE8D4',
+  errorFondo: '#FCE4E4',
+  neutroFondo: '#ECEAF1',
+  tonoMorado: '#EFE8FB',
+  tonoVerde: '#E1F3E4',
+  tonoNaranja: '#FDEBDD',
+  estrella: '#F5A623',
+  sombra: '#2A1560',
 } as const;

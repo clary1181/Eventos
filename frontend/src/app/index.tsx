@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Redirect } from 'expo-router';
-import { useSesion } from '@/features/auth';
+import { rutaInicialPorRol, useSesion } from '@/features/auth';
 import { Colores } from '@/compartido/tema';
 
 // Pantalla de arranque: espera a Firebase y manda a la persona a donde corresponde
@@ -15,5 +15,5 @@ export default function Arranque() {
       </View>
     );
   }
-  return <Redirect href={perfil ? '/inicio' : '/iniciar-sesion'} />;
+  return <Redirect href={perfil ? rutaInicialPorRol(perfil.rol) : '/iniciar-sesion'} />;
 }
