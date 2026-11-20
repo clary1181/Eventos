@@ -9,3 +9,14 @@ dist/
 .firebase/
 serviceAccount*.json
 google-services.json
+
+node_modules/
+.env
+.env.*
+!.env.example
+.expo/
+dist/
+*.log
+.firebase/
+serviceAccount*.json
+google-services.json

@@ -251,16 +251,58 @@ service cloud.firestore {
 
       allow update: if actualizacionOrganizador() || actualizacionAdmin();
 
+      // Compra simulada: un asistente solo puede subir el contador "vendidas" de un evento aprobado
+      // (a lo más 5 a la vez y sin pasar la capacidad)
+      allow update: if esRol('asistente')
+        && resource.data.estado == 'aprobado'
+        && soloCambian(['vendidas'])
+        && nuevo().vendidas is int
+        && nuevo().vendidas > resource.data.vendidas
+        && nuevo().vendidas <= resource.data.vendidas + 5
+        && nuevo().vendidas <= resource.data.capacidad;
+
       allow delete: if false;
     }
 
-    // ---------- entradas (solo backend escribe) ----------
+    // ---------- entradas ----------
+    // Compra simulada: el asistente crea sus propias entradas desde la app.
+    // El ID solo puede ser {uid}_{eventoId}_{1..5}, así que el máximo es 5 por persona y evento (D3).
+    // Validar con QR (marcar "usada") se hará después, solo por el organizador del evento.
     match /entradas/{id} {
       allow read: if autenticado()
         && (resource.data.asistenteId == miUid()
             || resource.data.organizadorId == miUid()
             || esAdmin());
-      allow write: if false;
+
+      allow create: if esRol('asistente')
+        && nuevo().keys().hasOnly(['eventoId','asistenteId','organizadorId','ordenId','numero',
+             'precio','pago','token','usada','eventoTitulo','eventoFechaInicio','lugar',
+             'imagenUrl','creadaEn'])
+        && nuevo().keys().hasAll(['eventoId','asistenteId','organizadorId','ordenId','numero',
+             'precio','pago','token','usada','eventoTitulo','eventoFechaInicio','lugar',
+             'imagenUrl','creadaEn'])
+        && nuevo().asistenteId == miUid()
+        && textoValido(nuevo().eventoId, 1, 100)
+        && nuevo().numero is int && nuevo().numero >= 1 && nuevo().numero <= 5
+        && id == miUid() + '_' + nuevo().eventoId + '_' + string(nuevo().numero)
+        && nuevo().pago == 'simulado_exitoso'
+        && nuevo().usada == false
+        && textoValido(nuevo().token, 16, 64)
+        && nuevo().creadaEn == request.time
+        && get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.estado == 'aprobado'
+        && nuevo().precio == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.precio
+        && nuevo().organizadorId == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.organizadorId;
+
+      // El organizador del evento marca la entrada como usada al escanear su QR (solo una vez)
+      allow update: if esRol('organizador')
+        && resource.data.organizadorId == miUid()
+        && resource.data.usada == false
+        && soloCambian(['usada','usadaEn','validadaPor'])
+        && nuevo().usada == true
+        && nuevo().usadaEn == request.time
+        && nuevo().validadaPor == miUid();
+
+      allow delete: if false;
     }
 
     // ---------- favoritos ----------
