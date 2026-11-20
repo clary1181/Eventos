@@ -20,3 +20,7 @@ dist/
 .firebase/
 serviceAccount*.json
 google-services.json
+
+.env
+frontend/.env
+frontend/.env*
