@@ -1,15 +1,15 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colores } from '@/compartido/tema';
 import type { OrganizadorPublico } from '../servicios/servicioOrganizador';
 
-interface Propiedades { nombreRespaldo: string; organizador: OrganizadorPublico | null }
+interface Propiedades { nombreRespaldo: string; organizador: OrganizadorPublico | null; alPulsar?: () => void }
 
-export function TarjetaOrganizadorDetalle({ nombreRespaldo, organizador }: Propiedades) {
+export function TarjetaOrganizadorDetalle({ nombreRespaldo, organizador, alPulsar }: Propiedades) {
   const nombre = organizador?.nombre || nombreRespaldo || 'Organizador';
   return (
-    <View style={estilos.tarjeta}>
+    <Pressable onPress={alPulsar} disabled={!alPulsar} style={({ pressed }) => [estilos.tarjeta, pressed && { opacity: 0.9 }]} accessibilityRole="button" accessibilityLabel={`Ver perfil de ${nombre}`}>
       {organizador?.fotoUrl ? (
         <Image source={{ uri: organizador.fotoUrl }} style={estilos.avatar} />
       ) : (
@@ -30,7 +30,8 @@ export function TarjetaOrganizadorDetalle({ nombreRespaldo, organizador }: Propi
           </View>
         )}
       </View>
-    </View>
+      {!!alPulsar && <Ionicons name="chevron-forward" size={22} color={Colores.primarioOscuro} />}
+    </Pressable>
   );
 }
 

@@ -83,6 +83,12 @@ export function PantallaEntradaQR() {
             </View>
             <Text style={estilos.numero}>Entrada {entrada.numero}</Text>
             <Text style={estilos.aviso}>{aviso}</Text>
+            {estado !== 'valida' && (
+              <Pressable style={estilos.verEvento} onPress={() => router.push(`/asistente/evento/${entrada.eventoId}` as Href)} accessibilityRole="button">
+                <Ionicons name="star-outline" size={18} color={Colores.primario} />
+                <Text style={estilos.textoVerEvento}>Ver evento y calificar</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </ScrollView>

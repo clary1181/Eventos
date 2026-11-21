@@ -46,7 +46,7 @@ export function PantallaRevisionEventos() {
           />
         )}
       </View>
-      <ModalRevisionEvento evento={r.seleccionado} procesando={r.procesando} alCerrar={r.cerrar} alDictaminar={r.dictaminar} />
+      <ModalRevisionEvento evento={r.seleccionado} procesando={r.procesando} alCerrar={r.cerrar} alDictaminar={r.dictaminar} alResolverCambios={r.resolverCambios} />
     </View>
   );
 }

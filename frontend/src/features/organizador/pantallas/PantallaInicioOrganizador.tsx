@@ -14,6 +14,7 @@ import { useAccionCrearEvento } from '../hooks/useAccionCrearEvento';
 import { useResumenOrganizador } from '../hooks/useResumenOrganizador';
 import { estilos } from './PantallaInicioOrganizador.estilos';
 import { useEstadoVerificacion } from '../hooks/useEstadoVerificacion';
+import { useGestionEvento } from '@/features/gestion-evento';
 import { formatearMoneda, formatearNumero, useEventosOrganizador, type Evento } from '@/features/eventos';
 
 export function PantallaInicioOrganizador() {
@@ -25,14 +26,15 @@ export function PantallaInicioOrganizador() {
   const { eventos, cargando, error } = useEventosOrganizador(perfil?.uid);
   const resumen = useResumenOrganizador(eventos);
   const crear = useAccionCrearEvento();
+  const gestion = useGestionEvento();
   const estadoVerificacion = useEstadoVerificacion(perfil?.uid, perfil?.estadoVerificacion);
   
 
   if (!perfil) return null;
   const ir = (ruta: string) => router.push(ruta as Href);
   const editar = (evento: Evento) => {
-    if (evento.estado !== 'pendiente_aprobacion' && evento.estado !== 'requiere_correccion') {
-      avisarProximamente('La edición de eventos publicados, rechazados o suspendidos');
+    if (evento.estado !== 'pendiente_aprobacion' && evento.estado !== 'requiere_correccion' && evento.estado !== 'aprobado') {
+      avisarProximamente('La edición de eventos rechazados o suspendidos');
       return;
     }
     ir(`/organizador/editar-evento?id=${evento.id}`);
@@ -96,14 +98,15 @@ export function PantallaInicioOrganizador() {
             alCrear={crear}
             acciones={(evento) => (
               <>
-                <BotonIcono tono="claro" tamano={30} icono="stats-chart" etiqueta="Estadísticas del evento" onPress={() => avisarProximamente('Las estadísticas del evento')} />
+                <BotonIcono tono="claro" tamano={30} icono="stats-chart" etiqueta="Estadísticas del evento" onPress={() => gestion.verEstadisticas(evento)} />
                 <BotonIcono tono="claro" tamano={30} icono="pencil-outline" etiqueta="Editar evento" onPress={() => editar(evento)} />
-                <BotonIcono tono="claro" tamano={30} icono="ellipsis-horizontal" etiqueta="Más opciones" onPress={() => avisarProximamente('Más opciones')} />
+                <BotonIcono tono="claro" tamano={30} icono="ellipsis-horizontal" etiqueta="Más opciones" onPress={() => gestion.abrirMenu(evento)} />
               </>
             )}
           />
         </View>
       </View>
+      {gestion.hoja}
     </ScrollView>
   );
 }

@@ -148,6 +148,18 @@ service cloud.firestore {
               'imagenUrl','imagenPublicId'];
     }
 
+    // El resultado debe ser exactamente el evento actual con la propuesta del organizador aplicada
+    function aplicaPropuesta(r, n) {
+      let p = r.cambioPropuesto;
+      return n.fechaInicio == p.get('fechaInicio', r.fechaInicio)
+        && n.fechaFin == p.get('fechaFin', r.fechaFin)
+        && n.lugar == p.get('lugar', r.lugar)
+        && n.direccion == p.get('direccion', r.direccion)
+        && n.precio == p.get('precio', r.precio)
+        && n.imagenUrl == p.get('imagenUrl', r.imagenUrl)
+        && n.imagenPublicId == p.get('imagenPublicId', r.imagenPublicId);
+    }
+
     function eventoValido(n) {
       return textoValido(n.titulo, 3, 100)
         && textoValido(n.descripcion, 10, 2000)
@@ -251,6 +263,32 @@ service cloud.firestore {
 
       allow update: if actualizacionOrganizador() || actualizacionAdmin();
 
+      // Moderación: el admin retira del catálogo un evento aprobado que recibió un reporte fundado
+      allow update: if esAdmin()
+        && resource.data.estado == 'aprobado'
+        && soloCambian(['estado','motivoRechazo','actualizadoEn'])
+        && nuevo().estado == 'suspendido'
+        && textoValido(nuevo().motivoRechazo, 1, 500)
+        && nuevo().actualizadoEn == request.time;
+
+      // Cambios propuestos en un evento con ventas: el admin los aprueba (se aplican) o los rechaza (motivo)
+      allow update: if esAdmin()
+        && resource.data.estado == 'aprobado'
+        && resource.data.estadoCambio == 'pendiente'
+        && nuevo().actualizadoEn == request.time
+        && (
+          (soloCambian(['fechaInicio','fechaFin','lugar','direccion','precio','imagenUrl','imagenPublicId',
+                        'estadoCambio','cambioPropuesto','actualizadoEn'])
+            && nuevo().estadoCambio == 'ninguno'
+            && !('cambioPropuesto' in nuevo())
+            && aplicaPropuesta(resource.data, nuevo())
+            && eventoValido(nuevo()))
+          ||
+          (soloCambian(['estadoCambio','observacionesCambio','actualizadoEn'])
+            && nuevo().estadoCambio == 'requiere_correccion'
+            && textoValido(nuevo().observacionesCambio, 1, 500))
+        );
+
       // Compra simulada: un asistente solo puede subir el contador "vendidas" de un evento aprobado
       // (a lo más 5 a la vez y sin pasar la capacidad)
       allow update: if esRol('asistente')
@@ -261,7 +299,10 @@ service cloud.firestore {
         && nuevo().vendidas <= resource.data.vendidas + 5
         && nuevo().vendidas <= resource.data.capacidad;
 
-      allow delete: if false;
+      // El organizador puede eliminar un evento propio mientras no haya vendido ninguna entrada
+      allow delete: if esRol('organizador')
+        && resource.data.organizadorId == miUid()
+        && resource.data.vendidas == 0;
     }
 
     // ---------- entradas ----------
@@ -318,6 +359,21 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ---------- seguidos ----------
+    // Un asistente sigue a un organizador. ID: {asistenteId}_{organizadorId}
+    match /seguidos/{id} {
+      allow read: if autenticado() && resource.data.asistenteId == miUid();
+      allow create: if esRol('asistente')
+        && nuevo().keys().hasOnly(['asistenteId','organizadorId','creadoEn'])
+        && nuevo().asistenteId == miUid()
+        && textoValido(nuevo().organizadorId, 1, 100)
+        && id == miUid() + '_' + nuevo().organizadorId
+        && get(/databases/$(database)/documents/usuarios/$(nuevo().organizadorId)).data.rol == 'organizador'
+        && nuevo().creadoEn == request.time;
+      allow delete: if autenticado() && resource.data.asistenteId == miUid();
+      allow update: if false;
+    }
+
     // ---------- reportes ----------
     match /reportes/{id} {
       allow read: if autenticado()
@@ -338,7 +394,16 @@ service cloud.firestore {
         && nuevo().eventoTitulo == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.titulo
         && nuevo().creadoEn == request.time;
 
-      allow update, delete: if false;   // el admin cierra vía callable
+      // El admin cierra el reporte desde la app: resuelto o desestimado, con una nota
+      allow update: if esAdmin()
+        && resource.data.estado == 'pendiente_moderacion'
+        && soloCambian(['estado','resolucion','resueltoPor','resueltoEn'])
+        && nuevo().estado in ['resuelto','desestimado']
+        && textoValido(nuevo().resolucion, 1, 500)
+        && nuevo().resueltoPor == miUid()
+        && nuevo().resueltoEn == request.time;
+
+      allow delete: if false;
     }
 
     // ---------- reportesOrganizador (la crea el backend) ----------
@@ -352,10 +417,19 @@ service cloud.firestore {
         && textoValido(nuevo().respuestaOrganizador, 1, 1000)
         && nuevo().respondidoEn == request.time;
 
-      allow create, delete: if false;
+      // Al resolver un reporte fundado, el admin crea esta copia (sin datos de quien reportó)
+      allow create: if esAdmin()
+        && nuevo().keys().hasOnly(['eventoId','eventoTitulo','organizadorId','motivo','descripcion','resolucion','creadoEn'])
+        && nuevo().keys().hasAll(['eventoId','eventoTitulo','organizadorId','motivo','descripcion','resolucion','creadoEn'])
+        && textoValido(nuevo().resolucion, 1, 500)
+        && nuevo().creadoEn == request.time;
+
+      allow delete: if false;
     }
 
-    // ---------- calificaciones (las escribe el callable) ----------
+    // ---------- calificaciones ----------
+    // Un asistente que compró entrada califica un evento ya terminado, una sola vez (ID {uid}_{eventoId}).
+    // El promedio se calcula en la app a partir de estos documentos.
     match /calificaciones/{id} {
       allow read: if autenticado()
         && (resource.data.oculta == false
@@ -366,7 +440,26 @@ service cloud.firestore {
         && soloCambian(['oculta'])
         && nuevo().oculta is bool;
 
-      allow create, delete: if false;
+      allow create: if esRol('asistente')
+        && nuevo().keys().hasOnly(['eventoId','organizadorId','eventoTitulo','asistenteId',
+             'asistenteNombre','estrellas','comentario','oculta','creadaEn'])
+        && nuevo().keys().hasAll(['eventoId','organizadorId','eventoTitulo','asistenteId',
+             'asistenteNombre','estrellas','oculta','creadaEn'])
+        && nuevo().asistenteId == miUid()
+        && textoValido(nuevo().eventoId, 1, 100)
+        && id == miUid() + '_' + nuevo().eventoId
+        && nuevo().estrellas is int && nuevo().estrellas >= 1 && nuevo().estrellas <= 5
+        && (!('comentario' in nuevo()) || textoValido(nuevo().comentario, 1, 500))
+        && textoValido(nuevo().asistenteNombre, 1, 50)
+        && nuevo().oculta == false
+        && nuevo().creadaEn == request.time
+        && exists(/databases/$(database)/documents/entradas/$(miUid() + '_' + nuevo().eventoId + '_1'))
+        && get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.estado == 'aprobado'
+        && get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.fechaFin < request.time
+        && nuevo().organizadorId == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.organizadorId
+        && nuevo().eventoTitulo == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.titulo;
+
+      allow delete: if false;
     }
 
     // ---------- notificaciones (las crea el backend) ----------

@@ -6,14 +6,16 @@ import { BotonIcono } from '@/compartido/componentes';
 import { avisarProximamente } from '@/compartido/utilidades/proximamente';
 import { useBarraEstado } from '@/compartido/utilidades/useBarraEstado';
 import { useEventosOrganizador, type Evento } from '@/features/eventos';
+import { useGestionEvento } from '@/features/gestion-evento';
 import { BotonCrearEvento } from '../componentes/BotonCrearEvento';
 import { ListaEventosOrganizador } from '../componentes/ListaEventosOrganizador';
 import { usePerfilOrganizador } from '../contexto/PerfilOrganizadorContexto';
 import { useAccionCrearEvento } from '../hooks/useAccionCrearEvento';
 import { estilos } from './PantallaMisEventos.estilos';
 
-// Solo los eventos que aún no son públicos se pueden corregir directamente (reglas de Firestore)
-const esEditable = (evento: Evento) => evento.estado === 'pendiente_aprobacion' || evento.estado === 'requiere_correccion';
+// Se pueden editar los eventos por corregir, en revisión y los ya publicados (reglas de Firestore)
+const esEditable = (evento: Evento) =>
+  evento.estado === 'pendiente_aprobacion' || evento.estado === 'requiere_correccion' || evento.estado === 'aprobado';
 
 export function PantallaMisEventos() {
   useBarraEstado('dark');
@@ -22,10 +24,11 @@ export function PantallaMisEventos() {
   const { perfil } = usePerfilOrganizador();
   const { eventos, cargando, error } = useEventosOrganizador(perfil?.uid);
   const crear = useAccionCrearEvento();
+  const gestion = useGestionEvento();
 
   const editar = (evento: Evento) => {
     if (!esEditable(evento)) {
-      avisarProximamente('La edición de eventos publicados, rechazados o suspendidos');
+      avisarProximamente('La edición de eventos rechazados o suspendidos');
       return;
     }
     router.push(`/organizador/editar-evento?id=${evento.id}` as Href);
@@ -45,11 +48,13 @@ export function PantallaMisEventos() {
         alPresionarEvento={(evento) => (esEditable(evento) ? editar(evento) : avisarProximamente('El detalle del evento'))}
         acciones={(evento) => (
           <>
+            <BotonIcono tono="claro" tamano={36} icono="stats-chart" etiqueta="Estadísticas del evento" onPress={() => gestion.verEstadisticas(evento)} />
             <BotonIcono tono="claro" tamano={36} icono="pencil-outline" etiqueta="Editar evento" onPress={() => editar(evento)} />
-            <BotonIcono tono="claro" tamano={36} icono="ellipsis-horizontal" etiqueta="Más opciones" onPress={() => avisarProximamente('Más opciones')} />
+            <BotonIcono tono="claro" tamano={36} icono="ellipsis-horizontal" etiqueta="Más opciones" onPress={() => gestion.abrirMenu(evento)} />
           </>
         )}
       />
+      {gestion.hoja}
     </ScrollView>
   );
 }

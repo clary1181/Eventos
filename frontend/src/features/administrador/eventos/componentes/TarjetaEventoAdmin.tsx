@@ -13,6 +13,7 @@ export function TarjetaEventoAdmin({ evento: e, alPulsar }: { evento: EventoAdmi
         <Text style={estilos.detalle} numberOfLines={1}>Por {e.organizadorNombre}</Text>
         <Text style={estilos.detalle}>{formatearFecha(e.fechaInicio)}</Text>
         <Text style={estilos.detalle} numberOfLines={1}>{e.lugar}</Text>
+        {e.estado === 'aprobado' && e.estadoCambio === 'pendiente' && <Text style={estilos.cambios}>Cambios pendientes de revisión</Text>}
       </View>
     </Pressable>
   );
@@ -26,5 +27,6 @@ const estilos = StyleSheet.create({
   imagen: { width: '100%', height: 130, backgroundColor: '#EFE8FB' },
   cuerpo: { padding: 14 },
   titulo: { fontSize: 17, fontWeight: '800', color: Colores.texto },
+  cambios: { fontSize: 12, fontWeight: '700', color: '#1D5FA8', marginTop: 4 },
   detalle: { fontSize: 13, color: Colores.textoSuave, marginTop: 2 },
 });

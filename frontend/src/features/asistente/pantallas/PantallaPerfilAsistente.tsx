@@ -11,6 +11,7 @@ import { BotonCorazon } from '../componentes/BotonCorazon';
 import { ModalEditarPerfil } from '../componentes/ModalEditarPerfil';
 import { useBarraEstadoAsistente } from '../hooks/useBarraEstadoAsistente';
 import { useEventosFavoritos } from '../hooks/useEventosFavoritos';
+import { useSeguidos } from '../hooks/useSeguidos';
 import { usePerfilAsistente } from '../hooks/usePerfilAsistente';
 import { formatearFechaHora } from '../utilidades/formato';
 import { estilos } from './PantallaPerfilAsistente.estilos';
@@ -25,6 +26,7 @@ export function PantallaPerfilAsistente() {
   const { perfil: sesion } = useSesion();
   const p = usePerfilAsistente(sesion?.uid);
   const fav = useEventosFavoritos(sesion?.uid);
+  const seguidos = useSeguidos(sesion?.uid);
   const [editando, setEditando] = useState(false);
 
   if (!sesion) return null;
@@ -43,10 +45,10 @@ export function PantallaPerfilAsistente() {
   const actividades: { icono: Icono; titulo: string; insignia?: number; alPulsar: () => void }[] = [
     { icono: 'ticket-outline', titulo: 'Mis entradas', insignia: p.entradasVigentes, alPulsar: () => ir('/asistente/entradas') },
     { icono: 'heart-outline', titulo: 'Mis favoritos', alPulsar: () => ir('/asistente/favoritos') },
-    { icono: 'people-outline', titulo: 'Organizadores que sigo', alPulsar: () => avisarProximamente('Seguir organizadores') },
-    { icono: 'time-outline', titulo: 'Historial de eventos', alPulsar: () => avisarProximamente('El historial de eventos') },
-    { icono: 'star-outline', titulo: 'Mis calificaciones', alPulsar: () => avisarProximamente('Las calificaciones') },
-    { icono: 'document-text-outline', titulo: 'Mis reportes', alPulsar: () => avisarProximamente('Los reportes') },
+    { icono: 'people-outline', titulo: 'Organizadores que sigo', alPulsar: () => ir('/asistente/organizadores-seguidos') },
+    { icono: 'time-outline', titulo: 'Historial de eventos', alPulsar: () => ir('/asistente/historial') },
+    { icono: 'star-outline', titulo: 'Mis calificaciones', alPulsar: () => ir('/asistente/mis-calificaciones') },
+    { icono: 'document-text-outline', titulo: 'Mis reportes', alPulsar: () => ir('/asistente/mis-reportes') },
   ];
 
   return (
@@ -116,13 +118,13 @@ export function PantallaPerfilAsistente() {
             <Text style={estilos.etiquetaMetrica}>Favoritos</Text>
           </View>
           <View style={estilos.separador} />
-          <Pressable style={estilos.metrica} onPress={() => avisarProximamente('Seguir organizadores')}>
+          <View style={estilos.metrica}>
             <View style={estilos.filaMetrica}>
               <Ionicons name="people-outline" size={26} color={Colores.primarioOscuro} />
-              <Text style={estilos.numero}>—</Text>
+              <Text style={estilos.numero}>{seguidos.lista.length}</Text>
             </View>
             <Text style={estilos.etiquetaMetrica}>Organizadores seguidos</Text>
-          </Pressable>
+          </View>
         </View>
 
         <View>

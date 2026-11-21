@@ -9,14 +9,20 @@ import { BarraCompra } from '../componentes/BarraCompra';
 import { CabeceraDetalle } from '../componentes/CabeceraDetalle';
 import { DatosPrincipalesEvento } from '../componentes/DatosPrincipalesEvento';
 import { MetricasEvento } from '../componentes/MetricasEvento';
+import { ModalCalificar } from '../componentes/ModalCalificar';
 import { ModalCompra } from '../componentes/ModalCompra';
+import { ModalReportar } from '../componentes/ModalReportar';
+import { SeccionCalificaciones } from '../componentes/SeccionCalificaciones';
 import { TarjetaOrganizadorDetalle } from '../componentes/TarjetaOrganizadorDetalle';
 import { TarjetaUbicacion } from '../componentes/TarjetaUbicacion';
+import { useAccionesEvento } from '../hooks/useAccionesEvento';
 import { useBarraEstadoAsistente } from '../hooks/useBarraEstadoAsistente';
+import { useCalificaciones } from '../hooks/useCalificaciones';
 import { useEntradasDelEvento } from '../hooks/useEntradasDelEvento';
 import { useEventoPublico } from '../hooks/useEventoPublico';
 import { useFavoritos } from '../hooks/useFavoritos';
 import { useOrganizadorPublico } from '../hooks/useOrganizadorPublico';
+import { useReporteEvento } from '../hooks/useReporteEvento';
 import { MAX_ENTRADAS_POR_EVENTO } from '../tipos';
 import { formatearFechaHora, formatearPrecio } from '../utilidades/formato';
 import { estilos } from './PantallaDetalleEvento.estilos';
@@ -32,6 +38,11 @@ export function PantallaDetalleEvento() {
   const favoritos = useFavoritos(perfil?.uid);
   const misEntradas = useEntradasDelEvento(perfil?.uid, id);
   const [comprando, setComprando] = useState(false);
+  const [calificando, setCalificando] = useState(false);
+  const [reportando, setReportando] = useState(false);
+  const cal = useCalificaciones(id, perfil?.uid);
+  const yaReporto = useReporteEvento(perfil?.uid, id);
+  const acciones = useAccionesEvento(evento, perfil?.uid, perfil?.nombre);
 
   const volver = () => (router.canGoBack() ? router.back() : router.replace('/asistente/explorar' as Href));
 
@@ -94,7 +105,7 @@ export function PantallaDetalleEvento() {
         <View style={estilos.hoja}>
           <Text style={estilos.titulo}>{evento.titulo}</Text>
           <DatosPrincipalesEvento evento={evento} />
-          <TarjetaOrganizadorDetalle nombreRespaldo={evento.organizadorNombre} organizador={organizador} />
+          <TarjetaOrganizadorDetalle nombreRespaldo={evento.organizadorNombre} organizador={organizador} alPulsar={() => router.push(`/asistente/organizador/${evento.organizadorId}` as Href)} />
           <MetricasEvento evento={evento} />
 
           <Text style={estilos.seccion}>Descripción</Text>
@@ -102,6 +113,24 @@ export function PantallaDetalleEvento() {
 
           <Text style={estilos.seccion}>Ubicación</Text>
           <TarjetaUbicacion evento={evento} />
+
+          <SeccionCalificaciones
+            lista={cal.lista}
+            total={cal.total}
+            promedio={cal.promedio}
+            mia={cal.mia}
+            puedeCalificar={finalizado && misEntradas > 0 && !cal.mia}
+            alCalificar={() => setCalificando(true)}
+          />
+
+          {yaReporto ? (
+            <Text style={estilos.yaReportaste}>Ya reportaste este evento. Gracias por avisar.</Text>
+          ) : (
+            <Pressable style={estilos.reportar} onPress={() => setReportando(true)} accessibilityRole="button">
+              <Ionicons name="flag-outline" size={18} color={Colores.textoSuave} />
+              <Text style={estilos.textoReportar}>Reportar evento</Text>
+            </Pressable>
+          )}
 
           {misEntradas > 0 && (
             <Text style={estilos.yaTienes} onPress={() => router.push('/asistente/entradas' as Href)}>
@@ -112,6 +141,9 @@ export function PantallaDetalleEvento() {
       </ScrollView>
 
       <BarraCompra texto={textoBoton} aviso={aviso} habilitado={puedeComprar} alPulsar={() => setComprando(true)} />
+
+      <ModalCalificar visible={calificando} eventoTitulo={evento.titulo} enviando={acciones.enviando} alCerrar={() => setCalificando(false)} alEnviar={acciones.calificar} />
+      <ModalReportar visible={reportando} eventoTitulo={evento.titulo} enviando={acciones.enviando} alCerrar={() => setReportando(false)} alEnviar={acciones.reportar} />
 
       <ModalCompra
         visible={comprando}

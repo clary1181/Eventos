@@ -3,12 +3,16 @@ import { Alert, Image, Linking, Pressable, ScrollView, Text, View, useWindowDime
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BarraMarca, BotonIcono, FondoHero, PestanasSegmentadas } from '@/compartido/componentes';
+import { BarraMarca, BotonIcono, FondoHero } from '@/compartido/componentes';
+import { PestanasIconoArriba } from '@/compartido/componentes/PestanasIconoArriba';
 import { Colores } from '@/compartido/tema';
 import { avisarProximamente } from '@/compartido/utilidades/proximamente';
 import { useBarraEstado } from '@/compartido/utilidades/useBarraEstado';
 import { cerrarSesion } from '@/features/auth';
+import { DistribucionEstrellas, ListaCalificaciones, PanelEstadisticas, useDatosOrganizador } from '@/features/estadisticas';
 import { formatearNumero, useEventosOrganizador } from '@/features/eventos';
+import { useGestionEvento } from '@/features/gestion-evento';
+import { ListaReportesOrganizador, useReportesOrganizador } from '@/features/reportes-organizador';
 import { BannerVerificacion } from '../componentes/BannerVerificacion';
 import { BotonCrearEvento } from '../componentes/BotonCrearEvento';
 import { ListaEventosOrganizador } from '../componentes/ListaEventosOrganizador';
@@ -19,9 +23,10 @@ import { useResumenOrganizador } from '../hooks/useResumenOrganizador';
 import { estilos } from './PantallaPerfilOrganizador.estilos';
 
 const SECCIONES = [
-  { id: 'eventos', titulo: 'Mis eventos', icono: 'calendar-blank-outline' },
+  { id: 'eventos', titulo: 'Eventos', icono: 'calendar-blank-outline' },
   { id: 'estadisticas', titulo: 'Estadísticas', icono: 'chart-bar' },
   { id: 'reportes', titulo: 'Reportes', icono: 'flag-outline' },
+  { id: 'resenas', titulo: 'Reseñas', icono: 'star-outline' },
 ] as const;
 
 type Contacto = { icono: React.ComponentProps<typeof Ionicons>['name']; texto: string; url: string };
@@ -37,9 +42,15 @@ export function PantallaPerfilOrganizador() {
   const { eventos, cargando, error } = useEventosOrganizador(perfil?.uid);
   const resumen = useResumenOrganizador(eventos);
   const crear = useAccionCrearEvento();
+  const gestion = useGestionEvento();
+  const datos = useDatosOrganizador(perfil?.uid);
+  const reportes = useReportesOrganizador(perfil?.uid);
   const [seccion, establecerSeccion] = useState<string>('eventos');
 
   if (!perfil) return null;
+  // La calificación se calcula con las reseñas visibles (el perfil guardado no se actualiza sin Cloud Functions)
+  const totalResenas = datos.calificaciones.length;
+  const promedio = totalResenas ? datos.calificaciones.reduce((a, c) => a + c.estrellas, 0) / totalResenas : 0;
   const alto = Math.round(width * 0.5) + top;
 
   const instagram = perfil.redes.instagram?.replace(/^@/, '');
@@ -96,10 +107,10 @@ export function PantallaPerfilOrganizador() {
             <Text style={estilos.rol}>Organizador de eventos</Text>
             <View style={estilos.filaCalificacion}>
               <Ionicons name="star" size={17} color={Colores.estrella} />
-              {perfil.totalCalificaciones > 0 ? (
+              {totalResenas > 0 ? (
                 <>
-                  <Text style={estilos.calificacion}>{perfil.promedioCalificacion.toFixed(1)}</Text>
-                  <Text style={estilos.resenas}>({formatearNumero(perfil.totalCalificaciones)} reseñas)</Text>
+                  <Text style={estilos.calificacion}>{promedio.toFixed(1)}</Text>
+                  <Text style={estilos.resenas}>({formatearNumero(totalResenas)} reseñas)</Text>
                 </>
               ) : (
                 <Text style={estilos.resenas}>Sin reseñas todavía</Text>
@@ -133,10 +144,10 @@ export function PantallaPerfilOrganizador() {
         <View style={estilos.metricas}>
           <TarjetaMetrica disposicion="horizontal" icono="calendar-check-outline" valor={formatearNumero(resumen.publicados)} etiqueta="Eventos publicados" />
           <TarjetaMetrica disposicion="horizontal" icono="ticket-confirmation-outline" valor={formatearNumero(resumen.entradasVendidas)} etiqueta="Entradas vendidas" />
-          <TarjetaMetrica disposicion="horizontal" icono="star-outline" valor={perfil.totalCalificaciones > 0 ? perfil.promedioCalificacion.toFixed(1) : '—'} etiqueta="Calificación promedio" />
+          <TarjetaMetrica disposicion="horizontal" icono="star-outline" valor={totalResenas > 0 ? promedio.toFixed(1) : '—'} etiqueta="Calificación promedio" />
         </View>
 
-        <PestanasSegmentadas opciones={[...SECCIONES]} activa={seccion} alCambiar={establecerSeccion} />
+        <PestanasIconoArriba opciones={[...SECCIONES]} activa={seccion} alCambiar={establecerSeccion} />
 
         {seccion === 'eventos' ? (
           <>
@@ -149,22 +160,33 @@ export function PantallaPerfilOrganizador() {
               cargando={cargando}
               error={error}
               alCrear={crear}
-              acciones={() => (
-                <BotonIcono tono="claro" tamano={36} icono="ellipsis-horizontal" etiqueta="Más opciones" onPress={() => avisarProximamente('Más opciones')} />
+              acciones={(evento) => (
+                <>
+                  <BotonIcono tono="claro" tamano={36} icono="stats-chart" etiqueta="Estadísticas del evento" onPress={() => gestion.verEstadisticas(evento)} />
+                  <BotonIcono tono="claro" tamano={36} icono="ellipsis-horizontal" etiqueta="Más opciones" onPress={() => gestion.abrirMenu(evento)} />
+                </>
               )}
             />
           </>
+        ) : seccion === 'estadisticas' ? (
+          <PanelEstadisticas
+            eventos={eventos}
+            entradas={datos.entradas}
+            calificaciones={datos.calificaciones}
+            cargando={datos.cargando}
+            error={datos.error}
+            alAbrirEvento={(e) => router.push(`/organizador/estadisticas-evento?id=${e.id}` as Href)}
+          />
+        ) : seccion === 'reportes' ? (
+          <ListaReportesOrganizador lista={reportes.lista} cargando={reportes.cargando} error={reportes.error} responder={reportes.responder} />
         ) : (
-          <View style={estilos.proximamente}>
-            <Ionicons name="construct-outline" size={32} color={Colores.primario} />
-            <Text style={estilos.textoProximamente}>
-              {seccion === 'estadisticas'
-                ? 'Aquí verás las ventas y la asistencia de tus eventos. Llega en una próxima etapa.'
-                : 'Aquí verás los reportes que reciban tus eventos y podrás responderlos. Llega en una próxima etapa.'}
-            </Text>
+          <View style={{ gap: 12 }}>
+            <DistribucionEstrellas calificaciones={datos.calificaciones} />
+            <ListaCalificaciones calificaciones={datos.calificaciones} />
           </View>
         )}
       </View>
+      {gestion.hoja}
     </ScrollView>
   );
 }

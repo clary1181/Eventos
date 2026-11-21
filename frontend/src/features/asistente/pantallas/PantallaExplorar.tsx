@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ActivityIndicator, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, TextInput, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,9 @@ import { ChipsCategoria } from '../componentes/ChipsCategoria';
 import { TarjetaEventoAsistente } from '../componentes/TarjetaEventoAsistente';
 import { useBarraEstadoAsistente } from '../hooks/useBarraEstadoAsistente';
 import { useCatalogo } from '../hooks/useCatalogo';
+import { FilaOrganizador } from '../componentes/FilaOrganizador';
 import { useFavoritos } from '../hooks/useFavoritos';
+import { useSeguidos } from '../hooks/useSeguidos';
 import type { EventoPublico } from '../tipos';
 import { estilos } from './PantallaExplorar.estilos';
 
@@ -23,7 +25,8 @@ export function PantallaExplorar() {
   const { perfil } = useSesion();
   const c = useCatalogo();
   const favoritos = useFavoritos(perfil?.uid);
-  const scroll = useRef<ScrollView>(null);
+  const seguidos = useSeguidos(perfil?.uid);
+  const scroll = useRef<ScrollViewInstance>(null);
   const yProximos = useRef(0);
 
   const abrir = (e: EventoPublico) => router.push(`/asistente/evento/${e.id}` as Href);
@@ -56,7 +59,7 @@ export function PantallaExplorar() {
           style={estilos.entradaBuscador}
           value={c.busqueda}
           onChangeText={c.setBusqueda}
-          placeholder="Buscar eventos (conciertos, ferias, etc.)"
+          placeholder="Buscar eventos u organizadores"
           placeholderTextColor={Colores.textoSuave}
           returnKeyType="search"
           numberOfLines={1}
@@ -69,6 +72,25 @@ export function PantallaExplorar() {
       {/* Hoja blanca con esquinas redondeadas debajo de la foto */}
       <View style={estilos.hoja}>
         <ChipsCategoria seleccionada={c.categoria} alCambiar={c.setCategoria} />
+
+        {c.organizadores.length > 0 && (
+          <View style={estilos.seccion}>
+            <Text style={[estilos.titulo, { marginBottom: 14 }]}>Organizadores</Text>
+            <View style={estilos.lista}>
+              {c.organizadores.map((o) => (
+                <FilaOrganizador
+                  key={o.id}
+                  organizadorId={o.id}
+                  nombreRespaldo={o.nombre}
+                  detalle={`${o.eventos} ${o.eventos === 1 ? 'evento publicado' : 'eventos publicados'}`}
+                  siguiendo={seguidos.ids.has(o.id)}
+                  alAbrir={() => router.push(`/asistente/organizador/${o.id}` as Href)}
+                  alSeguir={() => seguidos.alternar(o.id)}
+                />
+              ))}
+            </View>
+          </View>
+        )}
 
         {c.cargando ? (
           <View style={estilos.centro}><ActivityIndicator size="large" color={Colores.primario} /></View>

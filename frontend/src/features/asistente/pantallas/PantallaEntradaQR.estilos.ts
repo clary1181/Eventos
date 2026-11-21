@@ -20,6 +20,8 @@ export const estilos = StyleSheet.create({
   marcoQR: { padding: 14, backgroundColor: '#FFFFFF', borderRadius: 18, borderWidth: 1, borderColor: '#ECE6F7' },
   numero: { fontSize: 15, fontWeight: '700', color: Colores.primario },
   aviso: { fontSize: 13, color: Colores.textoSuave, textAlign: 'center', lineHeight: 18 },
+  verEvento: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: Colores.primario, borderRadius: 22, paddingHorizontal: 18, height: 44 },
+  textoVerEvento: { fontSize: 14, fontWeight: '700', color: Colores.primario },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 28, backgroundColor: '#FFFFFF' },
   mensaje: { fontSize: 16, color: Colores.texto, textAlign: 'center' },
 });

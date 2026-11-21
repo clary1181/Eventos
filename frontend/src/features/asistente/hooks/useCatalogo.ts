@@ -3,6 +3,8 @@ import { escucharEventosPublicos } from '../servicios/servicioCatalogo';
 import type { EventoPublico } from '../tipos';
 import { normalizar } from '../utilidades/formato';
 
+export interface OrganizadorEncontrado { id: string; nombre: string; eventos: number }
+
 export function useCatalogo() {
   const [todos, setTodos] = useState<EventoPublico[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -37,6 +39,20 @@ export function useCatalogo() {
     });
   }, [vigentes, busqueda, categoria]);
 
+  // Organizadores (con eventos publicados) cuyo nombre coincide con la búsqueda
+  const organizadores = useMemo<OrganizadorEncontrado[]>(() => {
+    const texto = normalizar(busqueda.trim());
+    if (texto === '') return [];
+    const mapa = new Map<string, OrganizadorEncontrado>();
+    todos.forEach((e) => {
+      if (!normalizar(e.organizadorNombre).includes(texto)) return;
+      const actual = mapa.get(e.organizadorId);
+      if (actual) actual.eventos += 1;
+      else mapa.set(e.organizadorId, { id: e.organizadorId, nombre: e.organizadorNombre, eventos: 1 });
+    });
+    return [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)).slice(0, 6);
+  }, [todos, busqueda]);
+
   // Destacado: el evento con más entradas vendidas (a igualdad, el más próximo). Solo sin búsqueda ni filtro.
   const destacado = useMemo(() => {
     if (filtrando) return null;
@@ -48,5 +64,5 @@ export function useCatalogo() {
     [filtrando, filtrados, vigentes, destacado]
   );
 
-  return { cargando, error, busqueda, setBusqueda, categoria, setCategoria, filtrando, destacado, proximos, hayEventos: vigentes.length > 0 };
+  return { cargando, error, busqueda, setBusqueda, categoria, setCategoria, filtrando, destacado, proximos, organizadores, hayEventos: vigentes.length > 0 };
 }
