@@ -1,29 +1,57 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Colores, Fuentes } from '@/compartido/tema';
+import React, { useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colores } from '@/compartido/tema';
 import type { Periodo } from '../tipos';
 
-const OPCIONES: { id: Periodo; titulo: string }[] = [
-  { id: '7d', titulo: '7 días' },
-  { id: '30d', titulo: '30 días' },
-  { id: 'todo', titulo: 'Todo' },
+const OPCIONES: { id: Periodo; titulo: string; corto: string }[] = [
+  { id: 'todo', titulo: 'Acumulado (todo el tiempo)', corto: 'Acumulado' },
+  { id: '30d', titulo: 'Últimos 30 días', corto: '30 días' },
+  { id: '7d', titulo: 'Últimos 7 días', corto: '7 días' },
 ];
 
+// Botón "Acumulado ⌄" que abre un menú para elegir el periodo
 export function SelectorPeriodo({ periodo, alCambiar }: { periodo: Periodo; alCambiar: (p: Periodo) => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const { bottom } = useSafeAreaInsets();
+  const actual = OPCIONES.find((o) => o.id === periodo) ?? OPCIONES[0];
+
   return (
-    <View style={estilos.fila}>
-      {OPCIONES.map((o) => (
-        <Pressable key={o.id} style={[estilos.opcion, periodo === o.id && estilos.activa]} onPress={() => alCambiar(o.id)} accessibilityRole="button">
-          <Text style={[estilos.texto, periodo === o.id && { color: '#FFFFFF' }]}>{o.titulo}</Text>
+    <>
+      <Pressable style={estilos.boton} onPress={() => setAbierto(true)} accessibilityRole="button" accessibilityLabel="Cambiar periodo">
+        <Text style={estilos.texto}>{actual.corto}</Text>
+        <Ionicons name="chevron-down" size={16} color={Colores.texto} />
+      </Pressable>
+
+      <Modal visible={abierto} transparent animationType="fade" onRequestClose={() => setAbierto(false)} statusBarTranslucent>
+        <Pressable style={estilos.fondo} onPress={() => setAbierto(false)}>
+          <Pressable style={[estilos.hoja, { paddingBottom: bottom + 16 }]} onPress={() => {}}>
+            <View style={estilos.asa} />
+            <Text style={estilos.titulo}>Periodo</Text>
+            {OPCIONES.map((o) => {
+              const activa = o.id === periodo;
+              return (
+                <Pressable key={o.id} style={[estilos.opcion, activa && { backgroundColor: '#F1EBFB' }]} onPress={() => { alCambiar(o.id); setAbierto(false); }} accessibilityRole="button">
+                  <Text style={[estilos.textoOpcion, activa && { color: Colores.primario }]}>{o.titulo}</Text>
+                  {activa && <Ionicons name="checkmark" size={22} color={Colores.primario} />}
+                </Pressable>
+              );
+            })}
+          </Pressable>
         </Pressable>
-      ))}
-    </View>
+      </Modal>
+    </>
   );
 }
 
 const estilos = StyleSheet.create({
-  fila: { flexDirection: 'row', backgroundColor: '#F1EBFB', borderRadius: 14, padding: 4 },
-  opcion: { flex: 1, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  activa: { backgroundColor: Colores.primario },
-  texto: { fontSize: 14, fontFamily: Fuentes.seminegrita, color: Colores.primarioOscuro },
+  boton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colores.borde, backgroundColor: '#FFFFFF', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 },
+  texto: { fontSize: 13, color: Colores.texto },
+  fondo: { flex: 1, backgroundColor: Colores.fondoModal, justifyContent: 'flex-end' },
+  hoja: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 16, paddingTop: 10, gap: 4 },
+  asa: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: '#E1DAF0', marginBottom: 10 },
+  titulo: { fontSize: 17, fontWeight: '800', color: Colores.primarioOscuro, marginBottom: 6, paddingHorizontal: 4 },
+  opcion: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 12, borderRadius: 14 },
+  textoOpcion: { fontSize: 16, color: Colores.texto, fontWeight: '600' },
 });

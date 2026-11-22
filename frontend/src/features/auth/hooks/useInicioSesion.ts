@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TipoAviso } from '../componentes/ModalAviso';
 import { codigoDeError, mensajeDeError } from '../utilidades/errores';
 import { validarCorreo } from '../utilidades/validaciones';
-import { iniciarSesion, reenviarCorreoVerificacion } from '../servicios/servicioAuth';
+import { iniciarSesion, iniciarSesionConGoogle, reenviarCorreoVerificacion } from '../servicios/servicioAuth';
 
 export interface AvisoInicioSesion {
   titulo: string;
@@ -77,12 +77,18 @@ export function useInicioSesion() {
     }
   };
 
-  const iniciarConGoogle = () => {
-    establecerAviso({
-      titulo: 'Próximamente',
-      mensaje: 'Iniciar con Google necesita un build de desarrollo y se activará más adelante.',
-      tipo: 'info',
-    });
+  const iniciarConGoogle = async () => {
+    if (cargando) return;
+    establecerCargando(true);
+    try {
+      await iniciarSesionConGoogle();
+      // Si la persona cancela no se muestra nada. Si entra, la ruta (auth) hace la redirección:
+      // a su pantalla de rol, o a "Completar perfil" si es su primera vez.
+    } catch (error) {
+      establecerAviso({ titulo: 'No se pudo iniciar con Google', mensaje: mensajeDeError(error), tipo: 'error' });
+    } finally {
+      establecerCargando(false);
+    }
   };
 
   return {

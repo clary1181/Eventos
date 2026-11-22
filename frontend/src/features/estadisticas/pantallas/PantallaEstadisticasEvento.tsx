@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { EncabezadoPantalla } from '@/compartido/componentes/EncabezadoPantalla';
@@ -70,6 +70,12 @@ export function PantallaEstadisticasEvento() {
           />
         </View>
 
+        <Pressable style={estilos.botonLista} onPress={() => router.push(`/organizador/entradas-vendidas?id=${id}` as Href)} accessibilityRole="button">
+          <Ionicons name="people-outline" size={22} color="#FFFFFF" />
+          <Text style={estilos.textoBotonLista}>Ver quién compró ({formatearNumero(vendidas)})</Text>
+          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+        </Pressable>
+
         <GraficaVentas puntos={serieEvento(entradas, ahora)} titulo="Ventas por día" />
 
         <View style={{ gap: 10 }}>
@@ -103,6 +109,8 @@ const estilos = StyleSheet.create({
   deTotal: { fontSize: 15, color: Colores.textoSuave, fontFamily: Fuentes.seminegrita },
   nota: { fontSize: 13, color: Colores.textoSuave },
   rejilla: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  botonLista: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colores.primario, borderRadius: 18, paddingHorizontal: 16, height: 54 },
+  textoBotonLista: { flex: 1, color: '#FFFFFF', fontSize: 15, fontFamily: Fuentes.negrita },
   seccion: { fontSize: 20, fontFamily: Fuentes.negrita, color: Colores.primarioOscuro },
   aviso: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colores.tonoMorado, borderRadius: 16, padding: 14 },
   textoAviso: { flex: 1, fontSize: 14, color: Colores.primarioOscuro },

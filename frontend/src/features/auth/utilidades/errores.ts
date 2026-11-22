@@ -26,6 +26,19 @@ export const mensajeDeError = (error: unknown): string => {
       return 'Esta cuenta está desactivada. Contacta al administrador.';
     case 'auth/correo-no-verificado':
       return 'Aún no has verificado tu correo electrónico.';
+    case 'auth/account-exists-with-different-credential':
+      return 'Ya existe una cuenta con ese correo. Inicia sesión con tu contraseña.';
+    case 'auth/sin-sesion':
+      return 'Tu sesión expiró. Vuelve a iniciar sesión.';
+    case 'google/no-disponible':
+      return 'Google Sign-In requiere el build de desarrollo (no funciona en Expo Go).';
+    case 'google/sin-configuracion':
+      return 'Falta configurar EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID en el archivo .env.';
+    case 'google/sin-token':
+      return 'No se pudo obtener la cuenta de Google. Inténtalo de nuevo.';
+    case '10':
+    case 'DEVELOPER_ERROR':
+      return 'Configuración de Google incorrecta (revisa el SHA-1, el paquete y el webClientId).';
     case 'usuarios/nombre-en-uso':
       return 'Este nombre de usuario ya está registrado.';
     case 'permission-denied':

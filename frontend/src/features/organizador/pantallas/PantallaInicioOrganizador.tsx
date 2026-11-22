@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { useGestionEvento } from '@/features/gestion-evento';
 import { AvisoSuspension } from '@/features/suspension-organizador';
 import { formatearMoneda, formatearNumero, useEventosOrganizador, type Evento } from '@/features/eventos';
 import { CampanaAvisos } from '@/features/notificaciones';
+import { calcularResumen, SelectorPeriodo, useDatosOrganizador, type Periodo } from '@/features/estadisticas';
 
 export function PantallaInicioOrganizador() {
   useBarraEstado('light');
@@ -30,7 +31,10 @@ export function PantallaInicioOrganizador() {
   const crear = useAccionCrearEvento();
   const gestion = useGestionEvento();
   const estadoVerificacion = useEstadoVerificacion(perfil?.uid, perfil?.estadoVerificacion);
-  
+  const [periodo, setPeriodo] = useState<Periodo>('todo');
+  const datos = useDatosOrganizador(perfil?.uid);
+  // "Acumulado" usa los totales de los eventos; 7 y 30 días se calculan con la fecha de cada compra
+  const delPeriodo = periodo === 'todo' || datos.cargando ? null : calcularResumen(eventos, datos.entradas, [], periodo);
 
   if (!perfil) return null;
   const ir = (ruta: string) => router.push(ruta as Href);
@@ -76,11 +80,11 @@ export function PantallaInicioOrganizador() {
         <View>
           <View style={estilos.encabezadoSeccion}>
             <Text style={estilos.tituloSeccion}>Resumen general</Text>
-            <View style={estilos.periodo}><Text style={estilos.textoPeriodo}>Acumulado</Text></View>
+            <SelectorPeriodo periodo={periodo} alCambiar={setPeriodo} />
           </View>
           <View style={estilos.metricas}>
-            <TarjetaMetrica icono="ticket-confirmation-outline" valor={formatearNumero(resumen.entradasVendidas)} etiqueta="Entradas vendidas" tono="morado" />
-            <TarjetaMetrica icono="cash-multiple" valor={formatearMoneda(resumen.ingresos)} etiqueta="Ingresos (simulados)" tono="verde" />
+            <TarjetaMetrica icono="ticket-confirmation-outline" valor={formatearNumero(delPeriodo ? delPeriodo.entradas : resumen.entradasVendidas)} etiqueta="Entradas vendidas" tono="morado" />
+            <TarjetaMetrica icono="cash-multiple" valor={formatearMoneda(delPeriodo ? delPeriodo.ingresos : resumen.ingresos)} etiqueta="Ingresos (simulados)" tono="verde" />
             <TarjetaMetrica icono="account-group-outline" valor={formatearNumero(resumen.activos)} etiqueta="Eventos activos" tono="naranja" />
           </View>
         </View>

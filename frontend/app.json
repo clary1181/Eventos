@@ -11,7 +11,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "cc.mreventos.app",
+      "package": "com.eventos.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -39,7 +39,8 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true

@@ -7,7 +7,7 @@ import { eliminarEvento } from '../servicios/servicioGestionEvento';
 
 const EDITABLES = ['pendiente_aprobacion', 'requiere_correccion', 'aprobado'];
 
-// Acciones del botón de tres puntos de un evento: ver estadísticas, editar y eliminar
+// Acciones del botón de tres puntos de un evento: ver estadísticas, entradas vendidas, editar y eliminar
 export function useGestionEvento() {
   const router = useRouter();
   const [evento, setEvento] = useState<Evento | null>(null);
@@ -16,6 +16,7 @@ export function useGestionEvento() {
   const luego = (f: () => void) => { cerrar(); setTimeout(f, 250); };
 
   const verEstadisticas = (e: Evento) => router.push(`/organizador/estadisticas-evento?id=${e.id}` as Href);
+  const verEntradas = (e: Evento) => router.push(`/organizador/entradas-vendidas?id=${e.id}` as Href);
 
   const eliminar = (e: Evento) => {
     if (e.vendidas > 0) {
@@ -42,6 +43,7 @@ export function useGestionEvento() {
   const acciones: AccionEvento[] = evento
     ? [
         { icono: 'stats-chart-outline', titulo: 'Ver estadísticas', alPulsar: () => luego(() => verEstadisticas(evento)) },
+        { icono: 'people-outline', titulo: 'Entradas vendidas', detalle: 'Quién compró y cuáles ya se validaron', alPulsar: () => luego(() => verEntradas(evento)) },
         ...(EDITABLES.includes(evento.estado)
           ? [{ icono: 'pencil-outline' as const, titulo: 'Editar evento', alPulsar: () => luego(() => router.push(`/organizador/editar-evento?id=${evento.id}` as Href)) }]
           : []),

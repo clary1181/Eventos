@@ -6,6 +6,7 @@ export { DistribucionEstrellas } from './componentes/DistribucionEstrellas';
 export { GraficaVentas } from './componentes/GraficaVentas';
 export { TarjetaKpi } from './componentes/TarjetaKpi';
 export { BarraProgreso } from './componentes/BarraProgreso';
+export { SelectorPeriodo } from './componentes/SelectorPeriodo';
 export { useDatosOrganizador } from './hooks/useDatosOrganizador';
-export { desdePeriodo, NOMBRE_PERIODO, porcentaje, serieVentas } from './utilidades/calculos';
+export { calcularResumen, desdePeriodo, NOMBRE_PERIODO, porcentaje, serieVentas } from './utilidades/calculos';
 export type { CalificacionResumen, EntradaResumen, Periodo } from './tipos';
