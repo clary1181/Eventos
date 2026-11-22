@@ -1,20 +1,19 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import React from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraMarca, BotonIcono, FondoHero } from '@/compartido/componentes';
 import { Colores } from '@/compartido/tema';
-import { avisarProximamente } from '@/compartido/utilidades/proximamente';
-import { cerrarSesion, useSesion } from '@/features/auth';
+import { useSesion } from '@/features/auth';
 import { BotonCorazon } from '../componentes/BotonCorazon';
-import { ModalEditarPerfil } from '../componentes/ModalEditarPerfil';
 import { useBarraEstadoAsistente } from '../hooks/useBarraEstadoAsistente';
 import { useEventosFavoritos } from '../hooks/useEventosFavoritos';
 import { useSeguidos } from '../hooks/useSeguidos';
 import { usePerfilAsistente } from '../hooks/usePerfilAsistente';
 import { formatearFechaHora } from '../utilidades/formato';
 import { estilos } from './PantallaPerfilAsistente.estilos';
+import { CampanaAvisos } from '@/features/notificaciones';
 
 type Icono = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -27,7 +26,6 @@ export function PantallaPerfilAsistente() {
   const p = usePerfilAsistente(sesion?.uid);
   const fav = useEventosFavoritos(sesion?.uid);
   const seguidos = useSeguidos(sesion?.uid);
-  const [editando, setEditando] = useState(false);
 
   if (!sesion) return null;
   if (!p.perfil) return <View style={estilos.centro}><ActivityIndicator size="large" color={Colores.primario} /></View>;
@@ -35,12 +33,6 @@ export function PantallaPerfilAsistente() {
   const ir = (ruta: string) => router.push(ruta as Href);
   const alto = Math.round(width * 0.5) + top;
   const nombreCompleto = `${p.perfil.nombre} ${p.perfil.apellidos}`.trim();
-
-  const abrirAjustes = () =>
-    Alert.alert('Ajustes', undefined, [
-      { text: 'Cerrar sesión', style: 'destructive', onPress: () => cerrarSesion() },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
 
   const actividades: { icono: Icono; titulo: string; insignia?: number; alPulsar: () => void }[] = [
     { icono: 'ticket-outline', titulo: 'Mis entradas', insignia: p.entradasVigentes, alPulsar: () => ir('/asistente/entradas') },
@@ -59,8 +51,8 @@ export function PantallaPerfilAsistente() {
             alAtras={() => (router.canGoBack() ? router.back() : router.replace('/asistente/explorar' as Href))}
             derecha={
               <>
-                <BotonIcono icono="notifications-outline" etiqueta="Avisos" onPress={() => avisarProximamente('Los avisos')} />
-                <BotonIcono icono="settings-outline" etiqueta="Ajustes" onPress={abrirAjustes} />
+                <CampanaAvisos />
+                <BotonIcono icono="settings-outline" etiqueta="Ajustes" onPress={() => ir('/asistente/configuracion')} />
               </>
             }
           />
@@ -94,12 +86,7 @@ export function PantallaPerfilAsistente() {
           </View>
         </View>
 
-        <Pressable style={[estilos.editar, { alignSelf: 'flex-start', marginTop: -6 }]} onPress={() => setEditando(true)} accessibilityRole="button">
-          <Ionicons name="pencil-outline" size={17} color={Colores.primario} />
-          <Text style={estilos.textoEditar}>Editar perfil</Text>
-        </Pressable>
-
-        <Text style={estilos.biografia}>{p.perfil.biografia || 'Aún no has escrito una biografía. Toca "Editar perfil" para agregarla.'}</Text>
+        <Text style={estilos.biografia}>{p.perfil.biografia || 'Aún no has escrito una biografía. Agrégala en Configuración > Editar perfil.'}</Text>
 
         <View style={estilos.metricas}>
           <View style={estilos.metrica}>
@@ -171,8 +158,6 @@ export function PantallaPerfilAsistente() {
           )}
         </View>
       </View>
-
-      <ModalEditarPerfil visible={editando} perfil={p.perfil} guardando={p.guardando} alCerrar={() => setEditando(false)} alGuardar={p.guardarDatos} />
     </ScrollView>
   );
 }

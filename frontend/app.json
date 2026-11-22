@@ -1,16 +1,18 @@
 {
   "expo": {
     "name": "Eventos",
-    "slug": "eventos",
+    "slug": "App-MR-Eventos",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "eventos",
+    "scheme": "mreventos",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "cc.mreventos.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -36,10 +38,16 @@
       ],
       "expo-status-bar",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d2301d4f-2c82-43e0-8f54-6eeec7d977a8"
+      }
     }
   }
 }

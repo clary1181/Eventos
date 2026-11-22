@@ -1,6 +1,7 @@
 import { collection, deleteField, doc, onSnapshot, serverTimestamp, Timestamp, updateDoc, type Unsubscribe } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
 import type { EstadoEvento, EventoAdmin, PropuestaCambio } from '../tipos';
+import { avisar, avisarVarios, compradoresDeEvento, seguidoresDe } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
 const aFecha = (v: unknown): Date | null =>
   v && typeof (v as { toDate?: unknown }).toDate === 'function' ? (v as { toDate: () => Date }).toDate() : null;
@@ -63,12 +64,37 @@ export function escucharEventos(alCambiar: (l: EventoAdmin[]) => void, alError: 
 export async function dictaminarEvento(
   id: string,
   estado: 'aprobado' | 'requiere_correccion' | 'rechazado',
-  texto: string
+  texto: string,
+  evento: { organizadorId: string; titulo: string; organizadorNombre?: string }
 ): Promise<void> {
   const cambios: Record<string, unknown> = { estado, actualizadoEn: serverTimestamp() };
   if (estado === 'requiere_correccion') cambios.observaciones = texto.trim();
   if (estado === 'rechazado') cambios.motivoRechazo = texto.trim();
   await updateDoc(doc(db, 'eventos', id), cambios);
+
+  const textos = {
+    aprobado: { titulo: '¡Evento aprobado!', mensaje: `"${evento.titulo}" ya está publicado con la etiqueta de evento verificado.` },
+    requiere_correccion: { titulo: 'Tu evento necesita correcciones', mensaje: `"${evento.titulo}": ${texto.trim()}` },
+    rechazado: { titulo: 'Evento rechazado', mensaje: `"${evento.titulo}": ${texto.trim()}` },
+  }[estado];
+  await avisar({
+    destinatarioId: evento.organizadorId,
+    tipo: estado === 'aprobado' ? 'evento_aprobado' : estado === 'rechazado' ? 'evento_rechazado' : 'evento_correccion',
+    ...textos,
+    ruta: '/organizador/mis-eventos',
+    eventoId: id,
+  });
+
+  // Al publicarse, los asistentes que siguen al organizador se enteran
+  if (estado === 'aprobado') {
+    await avisarVarios(await seguidoresDe(evento.organizadorId), {
+      tipo: 'organizador_nuevo_evento',
+      titulo: `${evento.organizadorNombre || 'Un organizador que sigues'} publicó un evento`,
+      mensaje: `Nuevo evento: "${evento.titulo}". ¡Échale un vistazo!`,
+      ruta: `/asistente/evento/${id}`,
+      eventoId: id,
+    });
+  }
 }
 
 // Aprueba la propuesta de un evento con ventas: aplica los campos propuestos y limpia la propuesta (reglas del administrador)
@@ -84,8 +110,35 @@ export async function aprobarCambios(e: EventoAdmin): Promise<void> {
   if (p.imagenUrl !== undefined) cambios.imagenUrl = p.imagenUrl;
   if (p.imagenPublicId !== undefined) cambios.imagenPublicId = p.imagenPublicId;
   await updateDoc(doc(db, 'eventos', e.id), cambios);
+
+  await avisar({
+    destinatarioId: e.organizadorId,
+    tipo: 'cambios_aprobados',
+    titulo: 'Cambios aprobados',
+    mensaje: `Los cambios de "${e.titulo}" ya están publicados.`,
+    ruta: '/organizador/mis-eventos',
+    eventoId: e.id,
+  });
+  // Quienes ya compraron se enteran del cambio de fecha, lugar, precio o foto
+  const compradores = await compradoresDeEvento(e.id);
+  await avisarVarios(compradores, {
+    tipo: 'evento_actualizado',
+    titulo: 'Un evento cambió',
+    mensaje: `"${e.titulo}" actualizó ${[p.fechaInicio && 'la fecha', p.lugar !== undefined && 'el lugar', p.direccion !== undefined && 'la dirección', p.precio !== undefined && 'el precio', p.imagenUrl !== undefined && 'la foto'].filter(Boolean).join(', ')}. Revisa los detalles.`,
+    ruta: `/asistente/evento/${e.id}`,
+    eventoId: e.id,
+  });
 }
 
 // Rechaza la propuesta: el evento sigue como estaba y el organizador ve el motivo (puede proponer otra vez)
-export const rechazarCambios = (id: string, motivo: string) =>
-  updateDoc(doc(db, 'eventos', id), { estadoCambio: 'requiere_correccion', observacionesCambio: motivo.trim(), actualizadoEn: serverTimestamp() });
+export async function rechazarCambios(id: string, motivo: string, evento: { organizadorId: string; titulo: string }): Promise<void> {
+  await updateDoc(doc(db, 'eventos', id), { estadoCambio: 'requiere_correccion', observacionesCambio: motivo.trim(), actualizadoEn: serverTimestamp() });
+  await avisar({
+    destinatarioId: evento.organizadorId,
+    tipo: 'cambios_rechazados',
+    titulo: 'Cambios rechazados',
+    mensaje: `"${evento.titulo}": ${motivo.trim()}`,
+    ruta: '/organizador/mis-eventos',
+    eventoId: id,
+  });
+}

@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useSesion } from '@/features/auth';
 import { crearEvento } from '../servicios/servicioCrearEvento';
-import { editarEvento } from '../servicios/servicioEditarEvento';
+import { analizarCambios, editarEvento, editarEventoPublicado } from '../servicios/servicioEditarEvento';
 import { desdeEvento, FORMULARIO_VACIO, type DatosFormularioEvento, type EventoEditable } from '../tipos';
 import { validarEvento } from '../utilidades/validaciones';
 
@@ -46,14 +46,41 @@ export function useFormularioEvento(editando?: EventoEditable) {
     );
     if (error) return Alert.alert('Revisa el formulario', error);
 
-    setEnviando(true);
     try {
-      if (editando) {
+      if (editando && editando.estado === 'aprobado') {
+        const previo = analizarCambios(editando, datos);
+        if (previo.sensibles.length > 0) {
+          const confirmado = await new Promise<boolean>((resolver) =>
+            Alert.alert(
+              'Cambios que requieren revisión',
+              `Cambiaste: ${previo.sensibles.join(', ')}.\n\n` +
+                (editando.vendidas === 0
+                  ? 'El evento dejará de ser visible hasta que el administrador lo apruebe de nuevo.'
+                  : 'Como ya hay entradas vendidas, estos cambios se enviarán al administrador y el evento seguirá publicado como está hasta que los apruebe.'),
+              [
+                { text: 'Cancelar', style: 'cancel', onPress: () => resolver(false) },
+                { text: 'Enviar', onPress: () => resolver(true) },
+              ],
+              { cancelable: false }
+            )
+          );
+          if (!confirmado) return;
+        }
+        setEnviando(true);
+        const cambios = await editarEventoPublicado(editando, datos);
+        Alert.alert(
+          cambios.sensibles.length > 0 ? 'Cambios enviados' : 'Cambios guardados',
+          cambios.sensibles.length > 0 ? 'Quedaron en revisión. Verás aquí la respuesta del administrador.' : 'Tus cambios ya se publicaron.',
+          [{ text: 'Entendido', onPress: () => router.back() }]
+        );
+      } else if (editando) {
+        setEnviando(true);
         await editarEvento(editando.id, datos);
         Alert.alert('Evento reenviado', 'Tus cambios quedaron en revisión. Te mostraremos la respuesta del administrador.', [
           { text: 'Entendido', onPress: () => router.back() },
         ]);
       } else {
+        setEnviando(true);
         await crearEvento({ uid: perfil.uid, nombre: perfil.nombre, apellidos: perfil.apellidos }, datos);
         setDatos(FORMULARIO_VACIO);
         setReinicios((n) => n + 1);
@@ -65,11 +92,12 @@ export function useFormularioEvento(editando?: EventoEditable) {
       console.error('Error al guardar el evento:', e);
       const codigo = (e as { code?: string })?.code;
       const detalle = e instanceof Error ? e.message : '';
+      const esEdicion = (e as { esEdicion?: boolean })?.esEdicion === true;
       Alert.alert(
-        editando ? 'No se pudo reenviar el evento' : 'No se pudo crear el evento',
+        editando ? 'No se pudo guardar el evento' : 'No se pudo crear el evento',
         codigo === 'permission-denied'
-          ? 'Tu cuenta debe estar verificada y activa, y el evento no debe haber terminado ni estar ya publicado.'
-          : detalle.startsWith('Cloudinary') || detalle.startsWith('Falta')
+          ? 'Tu cuenta debe estar verificada y sin suspensión vigente, el evento no debe haber terminado y no puedes tener otro cambio en revisión.'
+          : esEdicion || detalle.startsWith('Cloudinary') || detalle.startsWith('Falta')
             ? detalle
             : 'Revisa tu conexión e inténtalo de nuevo.'
       );

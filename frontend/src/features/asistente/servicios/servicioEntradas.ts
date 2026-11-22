@@ -1,6 +1,7 @@
 import { collection, doc, getDocs, onSnapshot, query, runTransaction, serverTimestamp, where, type Unsubscribe } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
 import { MAX_ENTRADAS_POR_EVENTO } from '../tipos';
+import { avisar } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
 export interface ResultadoCompra {
   ordenId: string;
@@ -35,10 +36,14 @@ export async function comprarEntradas(uid: string, eventoId: string, cantidad: n
   const refEvento = doc(db, 'eventos', eventoId);
   const ordenId = `orden_${Date.now()}`;
 
-  return runTransaction(db, async (tx) => {
+  let titulo = 'tu evento';
+  let organizadorId = '';
+  const resultado = await runTransaction(db, async (tx) => {
     const snap = await tx.get(refEvento);
     if (!snap.exists() || snap.data().estado !== 'aprobado') throw new Error('Este evento ya no está disponible.');
     const e = snap.data();
+    titulo = String(e.titulo ?? titulo);
+    organizadorId = String(e.organizadorId ?? '');
 
     const fin = typeof e.fechaFin?.toMillis === 'function' ? e.fechaFin.toMillis() : 0;
     if (Date.now() >= fin) throw new Error('Este evento ya terminó.');
@@ -74,6 +79,19 @@ export async function comprarEntradas(uid: string, eventoId: string, cantidad: n
     }
     return { ordenId, entradas: ids, total: precio * cantidad };
   });
+
+  // Aviso al organizador (no bloquea la compra si falla)
+  if (organizadorId) {
+    await avisar({
+      destinatarioId: organizadorId,
+      tipo: 'entradas_compradas',
+      titulo: 'Nueva compra de entradas',
+      mensaje: `Compraron ${cantidad} ${cantidad === 1 ? 'entrada' : 'entradas'} para "${titulo}".`,
+      ruta: `/organizador/estadisticas-evento?id=${eventoId}`,
+      eventoId,
+    });
+  }
+  return resultado;
 }
 
 // Cuántas entradas de este evento ya tiene el asistente (para respetar el límite)

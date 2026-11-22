@@ -53,7 +53,7 @@ export function useRevisionEventos() {
       }
       setProcesando(true);
       try {
-        await dictaminarEvento(seleccionado.id, estado, texto);
+        await dictaminarEvento(seleccionado.id, estado, texto, seleccionado);
         setSeleccionadoId(null);
       } catch (e) {
         console.error('Error al dictaminar el evento:', e);
@@ -75,7 +75,7 @@ export function useRevisionEventos() {
       setProcesando(true);
       try {
         if (accion === 'aprobar') await aprobarCambios(seleccionado);
-        else await rechazarCambios(seleccionado.id, texto);
+        else await rechazarCambios(seleccionado.id, texto, seleccionado);
         setSeleccionadoId(null);
       } catch (e) {
         console.error('Error al resolver los cambios:', e);

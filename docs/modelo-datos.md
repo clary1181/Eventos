@@ -1,6 +1,6 @@
 # Modelo de datos: Eventos
 
-> Estado: propuesta v1 con las decisiones D1 a D6 ya tomadas (sección 7), previa a escribir reglas y código. Se basa en las tareas por rol (asistente, organizador, administrador) y en la guía del proyecto anterior (MR-Eventos). Nada de esto está desplegado.
+> Este documento conserva el diseño y las decisiones iniciales del modelo; no es un inventario del comportamiento actual ni confirma qué está desplegado. El código vigente está en `backend/firestore.rules`, `backend/functions/src/` y `frontend/src/features/`. Para el estado funcional y las diferencias conocidas, consulta `docs/guia-proyecto.md`. Actualiza esta propuesta junto con las reglas, servicios y pruebas cuando cambien los contratos de datos.
 
 ## 1. Principios
 

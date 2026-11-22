@@ -1,11 +1,13 @@
-import React from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { RefreshControl, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BarraMarca, BotonIcono, FondoHero } from '@/compartido/componentes';
 import { Colores } from '@/compartido/tema';
 import { useSesion } from '@/features/auth';
+import type { Periodo } from '@/features/estadisticas';
+import { SelectorPeriodoAdmin } from '../componentes/SelectorPeriodoAdmin';
 import { TarjetaResumen } from '../componentes/TarjetaResumen';
 import { AccesoRapidoAdmin } from '../componentes/AccesoRapidoAdmin';
 import { FilaTarea } from '../componentes/FilaTarea';
@@ -13,10 +15,9 @@ import { useResumenAdministrador } from '../hooks/useResumenAdministrador';
 import { useBarraClara } from '../hooks/useBarraClara';
 import type { Conteo } from '../tipos';
 import { estilos } from './PantallaInicioAdministrador.estilos';
+import { CampanaAvisos } from '@/features/notificaciones';
 
 const MORADO = Colores.primario;
-const proximamente = (funcion: string) =>
-  Alert.alert('Próximamente', `${funcion} estará disponible en una próxima etapa.`);
 
 // "5 organizadores por verificar" / "1 organizador por verificar" / sin dato
 const textoTarea = (n: Conteo, singular: string, plural: string, sufijo: string) =>
@@ -28,7 +29,8 @@ export function PantallaInicioAdministrador() {
   const { width } = useWindowDimensions();
   const { top } = useSafeAreaInsets();
   const { perfil } = useSesion();
-  const { resumen, actualizando, recargar } = useResumenAdministrador();
+  const [periodo, setPeriodo] = useState<Periodo>('todo');
+  const { resumen, actualizando, recargar } = useResumenAdministrador(periodo);
 
   const p = resumen?.plataforma;
   const t = resumen?.tareas;
@@ -50,8 +52,8 @@ export function PantallaInicioAdministrador() {
             <BarraMarca
               derecha={
                 <>
-                  <BotonIcono icono="notifications-outline" etiqueta="Notificaciones" onPress={() => proximamente('Las notificaciones')} />
-                  <BotonIcono icono="person-circle-outline" etiqueta="Mi perfil" onPress={() => router.push('/administrador/perfil')} />
+                  <CampanaAvisos />
+                  <BotonIcono icono="settings-outline" etiqueta="Configuración" onPress={() => router.push('/administrador/configuracion' as Href)} />
                 </>
               }
             />
@@ -63,10 +65,7 @@ export function PantallaInicioAdministrador() {
         <View style={estilos.hoja}>
           <View style={estilos.filaTitulo}>
             <Text style={estilos.titulo}>Resumen de la plataforma</Text>
-            <Pressable style={estilos.periodo} onPress={() => proximamente('El filtro por periodo')}>
-              <Text style={estilos.textoPeriodo}>Acumulado</Text>
-              <Ionicons name="chevron-down" size={16} color={Colores.texto} />
-            </Pressable>
+            <SelectorPeriodoAdmin periodo={periodo} alCambiar={setPeriodo} />
           </View>
 
           <View style={estilos.fila}>
@@ -93,7 +92,7 @@ export function PantallaInicioAdministrador() {
               alPulsar={() => router.push('/administrador/reportes')} />
             <AccesoRapidoAdmin etiqueta={'Moderar\ncontenido'}
               icono={<MaterialCommunityIcons name="gavel" size={34} color={MORADO} />}
-              alPulsar={() => proximamente('La moderación de contenido')} />
+              alPulsar={() => router.push('/administrador/moderacion' as Href)} />
           </View>
 
           <Text style={[estilos.titulo, estilos.seccion]}>Tareas pendientes</Text>

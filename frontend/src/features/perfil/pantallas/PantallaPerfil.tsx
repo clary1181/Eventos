@@ -1,15 +1,22 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { BotonContorno } from '@/compartido/componentes';
 import { useBarraEstado } from '@/compartido/utilidades/useBarraEstado';
-import { cerrarSesion, useSesion } from '@/features/auth';
+import { useSesion } from '@/features/auth';
 import { estilos } from './PantallaPerfil.estilos';
 
 const NOMBRE_ROL = { asistente: 'Asistente', organizador: 'Organizador', administrador: 'Administrador' } as const;
+const RUTA_CONFIG = {
+  asistente: '/asistente/configuracion',
+  organizador: '/organizador/configuracion',
+  administrador: '/administrador/configuracion',
+} as const;
 
 // Perfil básico para asistente y administrador (el del organizador tiene su propia pantalla)
 export function PantallaPerfil() {
   useBarraEstado('dark');
+  const router = useRouter();
   const { perfil } = useSesion();
   if (!perfil) return null;
 
@@ -25,7 +32,7 @@ export function PantallaPerfil() {
           <Text style={estilos.textoEtiqueta}>{NOMBRE_ROL[perfil.rol]}</Text>
         </View>
       </View>
-      <BotonContorno titulo="Cerrar sesión" onPress={cerrarSesion} />
+      <BotonContorno titulo="Configuración" onPress={() => router.push(RUTA_CONFIG[perfil.rol] as Href)} />
     </View>
   );
 }

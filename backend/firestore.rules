@@ -19,7 +19,10 @@ service cloud.firestore {
     function organizadorVerificadoActivo() {
       return esRol('organizador')
         && perfil(miUid()).estadoVerificacion == 'aprobada'
-        && perfil(miUid()).estadoCuenta == 'activa';
+        && perfil(miUid()).estadoCuenta == 'activa'
+        // Sin suspensión vigente (la fija un admin con una fecha; al pasar esa fecha se levanta sola)
+        && (perfil(miUid()).get('suspensionHasta', null) == null
+            || perfil(miUid()).suspensionHasta <= request.time);
     }
     function nuevo() { return request.resource.data; }
     function cambios() { return request.resource.data.diff(resource.data).affectedKeys(); }
@@ -57,6 +60,22 @@ service cloud.firestore {
         && textoValido(nuevo().nombre, 1, 50)
         && textoValido(nuevo().apellidos, 1, 80)
         && textoValido(nuevo().ciudad, 1, 60);
+
+      // Moderación: el admin suspende (con fecha de fin y motivo) o levanta la suspensión de un organizador
+      allow update: if esAdmin()
+        && resource.data.rol == 'organizador'
+        && soloCambian(['suspensionHasta','motivoSuspension','suspendidoPor','suspendidoEn'])
+        && (
+          (nuevo().suspensionHasta is timestamp
+            && nuevo().suspensionHasta > request.time
+            && nuevo().suspensionHasta <= request.time + duration.value(400, 'd')
+            && textoValido(nuevo().motivoSuspension, 1, 500)
+            && nuevo().suspendidoPor == miUid()
+            && nuevo().suspendidoEn == request.time)
+          ||
+          (!('suspensionHasta' in nuevo()) && !('motivoSuspension' in nuevo())
+            && !('suspendidoPor' in nuevo()) && !('suspendidoEn' in nuevo()))
+        );
 
       allow delete: if false;
 
@@ -289,6 +308,13 @@ service cloud.firestore {
             && textoValido(nuevo().observacionesCambio, 1, 500))
         );
 
+      // Moderación: el admin reactiva un evento suspendido (vuelve al catálogo)
+      allow update: if esAdmin()
+        && resource.data.estado == 'suspendido'
+        && soloCambian(['estado','actualizadoEn'])
+        && nuevo().estado == 'aprobado'
+        && nuevo().actualizadoEn == request.time;
+
       // Compra simulada: un asistente solo puede subir el contador "vendidas" de un evento aprobado
       // (a lo más 5 a la vez y sin pasar la capacidad)
       allow update: if esRol('asistente')
@@ -362,7 +388,7 @@ service cloud.firestore {
     // ---------- seguidos ----------
     // Un asistente sigue a un organizador. ID: {asistenteId}_{organizadorId}
     match /seguidos/{id} {
-      allow read: if autenticado() && resource.data.asistenteId == miUid();
+      allow read: if autenticado() && (resource.data.asistenteId == miUid() || esAdmin());
       allow create: if esRol('asistente')
         && nuevo().keys().hasOnly(['asistenteId','organizadorId','creadoEn'])
         && nuevo().asistenteId == miUid()
@@ -462,14 +488,79 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ---------- notificaciones (las crea el backend) ----------
+    // ---------- notificaciones (avisos dentro de la app) ----------
+    // destinatarioId = uid de la persona, o 'administradores' (los ve cualquier administrador).
     match /notificaciones/{id} {
-      allow read: if autenticado() && resource.data.destinatarioId == miUid();
-      allow update: if autenticado() && resource.data.destinatarioId == miUid()
+      allow read: if autenticado()
+        && (resource.data.destinatarioId == miUid()
+            || (resource.data.destinatarioId == 'administradores' && esAdmin()));
+
+      allow create: if autenticado()
+        && nuevo().keys().hasOnly(['destinatarioId','origenId','tipo','titulo','mensaje','ruta','eventoId','leida','creadaEn'])
+        && nuevo().keys().hasAll(['destinatarioId','origenId','tipo','titulo','mensaje','leida','creadaEn'])
+        && nuevo().origenId == miUid()
+        && nuevo().leida == false
+        && nuevo().creadaEn == request.time
+        && textoValido(nuevo().destinatarioId, 1, 128)
+        && textoValido(nuevo().titulo, 1, 120)
+        && textoValido(nuevo().mensaje, 1, 500)
+        && (!('ruta' in nuevo()) || textoValido(nuevo().ruta, 1, 200))
+        && (!('eventoId' in nuevo()) || textoValido(nuevo().eventoId, 1, 100))
+        && nuevo().tipo in ['evento_nuevo','cambios_pendientes','reporte_nuevo','entradas_compradas',
+             'evento_aprobado','evento_rechazado','evento_correccion','cambios_aprobados','cambios_rechazados',
+             'evento_reactivado','reporte_recibido','verificacion_resuelta','cuenta_suspendida',
+             'suspension_levantada','evento_suspendido','evento_actualizado','reporte_resuelto','organizador_nuevo_evento']
+        && (
+          // El administrador puede avisar a cualquiera
+          esAdmin()
+          // Organizador: avisa a los administradores que hay un evento por revisar
+          || (esRol('organizador') && nuevo().destinatarioId == 'administradores'
+              && nuevo().tipo in ['evento_nuevo','cambios_pendientes','reporte_nuevo'])
+          // Asistente: avisa a los administradores de un reporte nuevo
+          || (esRol('asistente') && nuevo().destinatarioId == 'administradores'
+              && nuevo().tipo == 'reporte_nuevo')
+          // Asistente: avisa al organizador de que compró entradas (debe tener al menos una)
+          || (esRol('asistente') && nuevo().tipo == 'entradas_compradas'
+              && 'eventoId' in nuevo()
+              && exists(/databases/$(database)/documents/entradas/$(miUid() + '_' + nuevo().eventoId + '_1'))
+              && nuevo().destinatarioId == get(/databases/$(database)/documents/eventos/$(nuevo().eventoId)).data.organizadorId)
+        );
+
+      // Solo se puede marcar como leído
+      allow update: if autenticado()
+        && (resource.data.destinatarioId == miUid()
+            || (resource.data.destinatarioId == 'administradores' && esAdmin()))
         && soloCambian(['leida'])
-        && nuevo().leida is bool;
-      allow delete: if autenticado() && resource.data.destinatarioId == miUid();
-      allow create: if false;
+        && nuevo().leida == true;
+
+      allow delete: if false;
+    }
+
+    // ---------- tokensPush (token de notificaciones push de cada teléfono) ----------
+    // Lo escribe su dueño; cualquier sesión puede leerlo para poder enviarle un aviso.
+    match /tokensPush/{id} {
+      allow read: if autenticado();
+      allow create, update: if autenticado() && miUid() == id
+        && nuevo().keys().hasOnly(['token','rol','actualizadoEn'])
+        && nuevo().keys().hasAll(['token','rol','actualizadoEn'])
+        && textoValido(nuevo().token, 10, 200)
+        && nuevo().rol == perfil(miUid()).rol;
+      allow delete: if autenticado() && miUid() == id;
+    }
+
+    function contenidoValido(clave) {
+      return clave in ['ayuda', 'legal']
+        && nuevo().keys().hasOnly(['items', 'actualizadoEn', 'actualizadoPor'])
+        && nuevo().items is list
+        && nuevo().items.size() >= 1 && nuevo().items.size() <= 30
+        && nuevo().actualizadoEn == request.time
+        && nuevo().actualizadoPor == miUid();
+    }
+
+    match /contenidoApp/{clave} {
+      allow read: if autenticado();
+      allow create, update: if esAdmin() && contenidoValido(clave);
+      allow delete: if false;
     }
   }
 }

@@ -3,6 +3,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
 import type { DocumentoAdmin, EstadoSolicitud, PerfilResumido, SolicitudAdmin } from '../tipos';
+import { avisar } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
 const ETIQUETA_DOCUMENTO: Record<string, string> = {
   identificacion: 'Identificación (INE)',
@@ -102,4 +103,13 @@ export async function resolverSolicitud(
   };
   if (nuevoEstado !== 'aprobada') cambios.observaciones = observaciones.trim();
   await updateDoc(doc(db, 'solicitudesVerificacion', uidOrganizador), cambios);
+  await avisar({
+    destinatarioId: uidOrganizador,
+    tipo: 'verificacion_resuelta',
+    titulo: nuevoEstado === 'aprobada' ? '¡Cuenta verificada!' : 'Tu verificación necesita atención',
+    mensaje: nuevoEstado === 'aprobada'
+      ? 'Ya puedes crear y publicar eventos.'
+      : `Tu solicitud fue ${nuevoEstado === 'rechazada' ? 'rechazada' : 'devuelta con observaciones'}: ${observaciones.trim()}`,
+    ruta: '/organizador/inicio',
+  });
 }

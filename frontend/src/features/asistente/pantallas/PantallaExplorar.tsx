@@ -4,7 +4,6 @@ import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraMarca, BotonIcono, FondoHero } from '@/compartido/componentes';
-import { avisarProximamente } from '@/compartido/utilidades/proximamente';
 import { Colores } from '@/compartido/tema';
 import { useSesion } from '@/features/auth';
 import { ChipsCategoria } from '../componentes/ChipsCategoria';
@@ -16,6 +15,7 @@ import { useFavoritos } from '../hooks/useFavoritos';
 import { useSeguidos } from '../hooks/useSeguidos';
 import type { EventoPublico } from '../tipos';
 import { estilos } from './PantallaExplorar.estilos';
+import { CampanaAvisos } from '@/features/notificaciones';
 
 export function PantallaExplorar() {
   useBarraEstadoAsistente('light');
@@ -43,7 +43,7 @@ export function PantallaExplorar() {
           <BarraMarca
             derecha={
               <>
-                <BotonIcono icono="notifications-outline" etiqueta="Avisos" onPress={() => avisarProximamente('Los avisos')} />
+                <CampanaAvisos />
                 <BotonIcono icono="person-circle-outline" etiqueta="Mi perfil" onPress={() => router.push('/asistente/perfil' as Href)} />
               </>
             }

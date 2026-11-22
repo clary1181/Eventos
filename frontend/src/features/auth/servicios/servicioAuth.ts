@@ -1,9 +1,12 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
 } from 'firebase/auth';
 import { auth } from '@/infraestructura/firebase';
 import { Entorno } from '@/config/entorno';
@@ -78,4 +81,18 @@ export const recuperarContrasenia = async (correo: string): Promise<void> => {
 
 export const cerrarSesion = async (): Promise<void> => {
   await signOut(auth);
+};
+
+// Las cuentas que entren solo con Google no tienen contraseña que cambiar
+export const usaContrasenia = (): boolean =>
+  !!auth.currentUser?.providerData.some((p) => p.providerId === 'password');
+
+// Firebase exige una sesión reciente para cambiar la contraseña: se reautentica con la actual
+export const cambiarContrasenia = async (actual: string, nueva: string): Promise<void> => {
+  const usuario = auth.currentUser;
+  if (!usuario || !usuario.email) {
+    throw errorConCodigo('No hay una sesión activa.', 'auth/sin-sesion');
+  }
+  await reauthenticateWithCredential(usuario, EmailAuthProvider.credential(usuario.email, actual));
+  await updatePassword(usuario, nueva);
 };

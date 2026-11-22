@@ -15,7 +15,9 @@ import { useResumenOrganizador } from '../hooks/useResumenOrganizador';
 import { estilos } from './PantallaInicioOrganizador.estilos';
 import { useEstadoVerificacion } from '../hooks/useEstadoVerificacion';
 import { useGestionEvento } from '@/features/gestion-evento';
+import { AvisoSuspension } from '@/features/suspension-organizador';
 import { formatearMoneda, formatearNumero, useEventosOrganizador, type Evento } from '@/features/eventos';
+import { CampanaAvisos } from '@/features/notificaciones';
 
 export function PantallaInicioOrganizador() {
   useBarraEstado('light');
@@ -48,7 +50,7 @@ export function PantallaInicioOrganizador() {
           <BarraMarca
             derecha={
               <>
-                <BotonIcono icono="notifications-outline" etiqueta="Notificaciones" onPress={() => avisarProximamente('Las notificaciones')} />
+                <CampanaAvisos />
                 <BotonIcono icono="person-circle-outline" etiqueta="Mi perfil" onPress={() => ir('/organizador/perfil')} />
               </>
             }
@@ -59,6 +61,7 @@ export function PantallaInicioOrganizador() {
       </FondoHero>
 
       <View style={estilos.hoja}>
+        <AvisoSuspension />
         {estadoVerificacion !== 'aprobada' && (
           <BannerVerificacion elevado estado={estadoVerificacion as typeof perfil.estadoVerificacion} alPresionar={() => ir('/organizador/verificacion')} />
         )}

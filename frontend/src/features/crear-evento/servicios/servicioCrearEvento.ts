@@ -3,6 +3,7 @@ import { db } from '@/infraestructura/firebase';
 import { subirImagen } from '@/infraestructura/cloudinary/subirImagen';
 import type { DatosFormularioEvento } from '../tipos';
 import { aNumeroPrecio, limpiarTexto } from '../utilidades/validaciones';
+import { avisarAdministradores } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
 // Preset sin firma SOLO para portadas (carpeta eventos/portadas). Ver .env.example
 const PRESET_PORTADAS = process.env.EXPO_PUBLIC_CLOUDINARY_PRESET_EVENTOS ?? '';
@@ -41,6 +42,13 @@ export async function crearEvento(organizador: Organizador, d: DatosFormularioEv
     totalCalificaciones: 0,
     creadoEn: serverTimestamp(),
     actualizadoEn: serverTimestamp(),
+  });
+  await avisarAdministradores({
+    tipo: 'evento_nuevo',
+    titulo: 'Evento nuevo por revisar',
+    mensaje: `${organizador.nombre} ${organizador.apellidos} envió "${limpiarTexto(d.titulo)}" para aprobación.`,
+    ruta: '/administrador/eventos',
+    eventoId: referencia.id,
   });
   return referencia.id;
 }

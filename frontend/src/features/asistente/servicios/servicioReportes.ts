@@ -1,5 +1,6 @@
 import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, Timestamp, where, type Unsubscribe } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
+import { avisarAdministradores } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
 export type MotivoReporte = 'informacion_falsa' | 'spam' | 'fraude' | 'contenido_inapropiado' | 'otro';
 
@@ -46,8 +47,8 @@ export function escucharMisReportes(uid: string, alCambiar: (l: ReporteEnviado[]
 }
 
 // ID {uid}_{eventoId}: un solo reporte por persona y evento (lo exigen las reglas)
-export const enviarReporte = (uid: string, evento: { id: string; organizadorId: string; titulo: string }, motivo: MotivoReporte, descripcion: string) =>
-  setDoc(doc(db, 'reportes', `${uid}_${evento.id}`), {
+export async function enviarReporte(uid: string, evento: { id: string; organizadorId: string; titulo: string }, motivo: MotivoReporte, descripcion: string): Promise<void> {
+  await setDoc(doc(db, 'reportes', `${uid}_${evento.id}`), {
     eventoId: evento.id,
     organizadorId: evento.organizadorId,
     reportanteId: uid,
@@ -57,3 +58,11 @@ export const enviarReporte = (uid: string, evento: { id: string; organizadorId: 
     estado: 'pendiente_moderacion',
     creadoEn: serverTimestamp(),
   });
+  await avisarAdministradores({
+    tipo: 'reporte_nuevo',
+    titulo: 'Nuevo reporte',
+    mensaje: `Reportaron "${evento.titulo}" por ${MOTIVOS_REPORTE.find((m) => m.id === motivo)?.titulo.toLowerCase() ?? 'otro motivo'}.`,
+    ruta: '/administrador/reportes',
+    eventoId: evento.id,
+  });
+}

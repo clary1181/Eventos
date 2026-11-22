@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Alert, Image, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraMarca, BotonIcono, FondoHero } from '@/compartido/componentes';
 import { PestanasIconoArriba } from '@/compartido/componentes/PestanasIconoArriba';
 import { Colores } from '@/compartido/tema';
-import { avisarProximamente } from '@/compartido/utilidades/proximamente';
 import { useBarraEstado } from '@/compartido/utilidades/useBarraEstado';
-import { cerrarSesion } from '@/features/auth';
+import { useCambiarFoto } from '@/features/configuracion/hooks/useCambiarFoto';
 import { DistribucionEstrellas, ListaCalificaciones, PanelEstadisticas, useDatosOrganizador } from '@/features/estadisticas';
 import { formatearNumero, useEventosOrganizador } from '@/features/eventos';
 import { useGestionEvento } from '@/features/gestion-evento';
@@ -21,6 +20,7 @@ import { usePerfilOrganizador } from '../contexto/PerfilOrganizadorContexto';
 import { useAccionCrearEvento } from '../hooks/useAccionCrearEvento';
 import { useResumenOrganizador } from '../hooks/useResumenOrganizador';
 import { estilos } from './PantallaPerfilOrganizador.estilos';
+import { CampanaAvisos } from '@/features/notificaciones';
 
 const SECCIONES = [
   { id: 'eventos', titulo: 'Eventos', icono: 'calendar-blank-outline' },
@@ -45,6 +45,7 @@ export function PantallaPerfilOrganizador() {
   const gestion = useGestionEvento();
   const datos = useDatosOrganizador(perfil?.uid);
   const reportes = useReportesOrganizador(perfil?.uid);
+  const foto = useCambiarFoto(perfil?.uid);
   const [seccion, establecerSeccion] = useState<string>('eventos');
 
   if (!perfil) return null;
@@ -62,11 +63,6 @@ export function PantallaPerfilOrganizador() {
   ].filter((c): c is Contacto => c !== null);
 
   const alAtras = () => (router.canGoBack() ? router.back() : router.replace('/organizador/inicio' as Href));
-  const abrirAjustes = () =>
-    Alert.alert('Ajustes', undefined, [
-      { text: 'Cerrar sesión', style: 'destructive', onPress: () => cerrarSesion() },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
 
   return (
     <ScrollView style={estilos.raiz} contentContainerStyle={estilos.contenido} showsVerticalScrollIndicator={false} bounces={false} overScrollMode="never">
@@ -76,8 +72,8 @@ export function PantallaPerfilOrganizador() {
             alAtras={alAtras}
             derecha={
               <>
-                <BotonIcono icono="notifications-outline" etiqueta="Notificaciones" onPress={() => avisarProximamente('Las notificaciones')} />
-                <BotonIcono icono="settings-outline" etiqueta="Ajustes" onPress={abrirAjustes} />
+                <CampanaAvisos />
+                <BotonIcono icono="settings-outline" etiqueta="Ajustes" onPress={() => router.push('/organizador/configuracion' as Href)} />
               </>
             }
           />
@@ -94,8 +90,8 @@ export function PantallaPerfilOrganizador() {
                 <Text style={estilos.inicial}>{perfil.nombre.charAt(0).toUpperCase()}</Text>
               )}
             </View>
-            <Pressable style={estilos.camara} onPress={() => avisarProximamente('Cambiar la foto de perfil')} accessibilityLabel="Cambiar foto">
-              <Ionicons name="camera" size={18} color={Colores.primario} />
+            <Pressable style={estilos.camara} onPress={foto.cambiar} disabled={foto.guardando} accessibilityLabel="Cambiar foto">
+              {foto.guardando ? <ActivityIndicator size="small" color={Colores.primario} /> : <Ionicons name="camera" size={18} color={Colores.primario} />}
             </Pressable>
           </View>
 
@@ -116,14 +112,10 @@ export function PantallaPerfilOrganizador() {
                 <Text style={estilos.resenas}>Sin reseñas todavía</Text>
               )}
             </View>
-            <Pressable style={estilos.editar} onPress={() => avisarProximamente('Editar perfil')} accessibilityRole="button">
-              <Ionicons name="pencil-outline" size={15} color={Colores.primario} />
-              <Text style={estilos.textoEditar}>Editar perfil</Text>
-            </Pressable>
           </View>
         </View>
 
-        <Text style={estilos.biografia}>{perfil.biografia || 'Aún no has agregado una descripción de lo que organizas.'}</Text>
+        <Text style={estilos.biografia}>{perfil.biografia || 'Aún no has agregado una descripción de lo que organizas. Agrégala en Configuración > Editar perfil.'}</Text>
 
         {contactos.length > 0 && (
           <View style={estilos.contactos}>
