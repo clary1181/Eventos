@@ -44,7 +44,7 @@ function ContenidoEdicion({ evento }: { evento: EventoEditable }) {
           <View style={estilos.correcciones}>
             <Text style={estilos.tituloCorrecciones}>{piden ? 'El administrador pidió correcciones' : etiquetaMotivo}</Text>
             <Text style={estilos.textoCorrecciones}>
-              {piden ? evento.observaciones : evento.motivoRechazo || 'El administrador no indicó un motivo.'}
+              {piden ? evento.observaciones : evento.observaciones || 'El administrador no indicó un motivo.'}
             </Text>
             {moderado && (
               <Text style={[estilos.textoCorrecciones, { marginTop: 8 }]}>
