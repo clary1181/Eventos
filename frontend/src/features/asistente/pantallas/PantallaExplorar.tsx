@@ -48,7 +48,7 @@ export function PantallaExplorar() {
               </>
             }
           />
-          <Text style={estilos.saludo} numberOfLines={1}>¡Hola, {perfil?.nombre ?? ''}! 👋</Text>
+          <Text style={estilos.saludo} numberOfLines={1}>¡Hola, {perfil?.nombre ?? ''}!</Text>
           <Text style={estilos.subtitulo}>Descubre los mejores eventos de Ensenada</Text>
         </View>
       </FondoHero>
