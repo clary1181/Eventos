@@ -1,479 +1,677 @@
-# Guía actual del proyecto Eventos
+# Guia general del proyecto Eventos
 
-## 1. Propósito y alcance
+Actualizada el 22 de noviembre de 2026.
 
-Eventos es una aplicación para descubrir y publicar eventos, comprar entradas simuladas y gestionar su acceso. El cliente móvil/web está hecho con Expo, React Native y TypeScript. Firebase Authentication identifica a las personas; Cloud Firestore guarda los datos y aplica reglas de acceso; Cloud Functions ejecuta algunos procesos privilegiados; Cloudinary almacena imágenes.
+Esta guia describe el codigo existente en el repositorio. No confirma que Auth, Firestore, Functions, Hosting, Cloudinary o Expo Push esten desplegados en un proyecto externo. La implementacion real se encuentra principalmente en `frontend/src/`, `backend/firestore.rules`, `backend/functions/src/` y `backend/tests/`.
 
-Esta guía describe el código que existe en el repositorio, no confirma qué servicios están desplegados en Firebase. La referencia de implementación es el código de `frontend/src/` y `backend/`; `docs/modelo-datos.md` conserva decisiones de diseño que pueden diferir de lo ya programado.
+## 1. Proposito general
 
-### Estado funcional que se observa en el código
+Eventos es una aplicacion Expo para Android, iOS y web. Permite:
 
-- **Cuenta:** registro e inicio de sesión con correo y contraseña, verificación/recuperación por correo, perfil público y privado, restauración de sesión y cierre de sesión. No se encontró un flujo de acceso con Google.
-- **Asistente:** catálogo y detalle de eventos aprobados, favoritos, compra simulada, entradas y QR, historial, reseñas, reportes, perfil público del organizador y seguimiento de organizadores.
-- **Organizador:** panel, perfil, solicitud de verificación, creación/edición y listado de eventos, estadísticas, respuesta a reportes del organizador y escaneo/validación de QR.
-- **Administrador:** resumen y estadísticas, revisión de solicitudes de organizadores y eventos, moderación de reportes y calificaciones, y suspensión/reactivación de eventos y organizadores.
-- **Backend:** existe un trigger para sincronizar la aprobación de verificación con el perfil, además de una función callable de compra. La app actual compra mediante escrituras directas a Firestore, no invoca esa función callable.
-- **Hosting:** `backend/public/` contiene las páginas estáticas de Firebase Hosting; no aloja el cliente Expo.
+- al asistente descubrir eventos aprobados, guardarlos como favoritos, seguir organizadores, comprar entradas simuladas, ver el QR, consultar historial, calificar eventos y reportar contenido;
+- al organizador solicitar verificacion, crear y administrar eventos, consultar ventas y reportes, responder reportes recibidos y validar entradas por QR;
+- al administrador revisar solicitudes de organizadores, aprobar o rechazar eventos, moderar reportes y calificaciones, consultar estadisticas y suspender cuentas o eventos.
 
-“Funcional” aquí significa que hay pantallas y conexiones a servicios en el código. No significa que los emuladores, credenciales, reglas o Functions estén desplegados o configurados en el entorno de ejecución.
+El stack principal es Expo Router, React Native, React, TypeScript, Firebase Authentication, Cloud Firestore, Firebase Functions, Cloudinary y Expo Notifications.
 
-La pestaña `organizador/(pestanas)/estadisticas.tsx` usa las estadísticas implementadas; la ruta alternativa `organizador/estadisticas.tsx` todavía muestra “próximamente”.
+## 2. Arquitectura general
 
-## 2. Arquitectura y conexiones
+```mermaid
+flowchart LR
+    UI[Pantallas Expo Router] --> HOOKS[Hooks y estado local]
+    HOOKS --> SERVICIOS[Servicios por feature]
+    SERVICIOS --> AUTH[Firebase Authentication]
+    SERVICIOS --> FIRESTORE[Cloud Firestore]
+    SERVICIOS --> CLOUDINARY[Cloudinary]
+    SERVICIOS --> PUSH[Expo Push Service]
 
-```text
-Expo Router: frontend/src/app/
-  ├─ (auth) ── features/auth ── Firebase Authentication + usuarios/{uid}
-  ├─ asistente ── features/asistente ── eventos, entradas, favoritos, seguidos,
-  │                                      calificaciones y reportes en Firestore
-  ├─ organizador ── features/organizador, crear-evento, eventos, estadisticas,
-  │                  verificacion, validar-qr, reportes-organizador
-  └─ administrador ── features/administrador ── revisión y moderación en Firestore
-                               │
-                  compartido (componentes, tema, navegación, utilidades)
-                               │
-         infraestructura/firebase ─ config/entorno ─ Firebase
-         infraestructura/cloudinary ─ config/cloudinary ─ Cloudinary
+    FIRESTORE --> REGLAS[firestore.rules]
+    FIRESTORE --> INDICES[firestore.indexes.json]
+    FIRESTORE --> FUNCTIONS[Cloud Functions]
+    FUNCTIONS --> ADMIN[Firebase Admin]
+    PUSH --> DISPOSITIVOS[Dispositivos con Expo Notifications]
 
-backend/firebase.json
-  ├─ firestore.rules + firestore.indexes.json
-  ├─ functions/src (trigger de verificación y callable de compra)
-  ├─ tests/reglas.test.mjs
-  └─ public/ (Firebase Hosting estático)
+    SESION[SesionProvider] --> UI
+    AVISOS[AvisosProvider] --> UI
+    COMPARTIDO[Tema y componentes compartidos] --> UI
 ```
 
-`frontend/tsconfig.json` configura el alias `@/` hacia `frontend/src/`. Los archivos de `app/` son rutas/adaptadores Expo Router; el trabajo de pantalla, estado y acceso a datos se organiza por dominio dentro de `features/`. Los servicios SDK se inicializan en `infraestructura/`, no en cada pantalla.
+### Principios de arquitectura
 
-### Sesión y protección por rol
+- `src/app/` contiene rutas y layouts. La ruta no debe concentrar datos o reglas extensas.
+- `src/features/<dominio>/` agrupa pantallas, componentes, hooks, servicios y tipos de una funcionalidad.
+- `src/compartido/` contiene componentes visuales, tema, navegacion y utilidades reutilizables.
+- `src/infraestructura/` inicializa SDK externos.
+- `src/config/` lee variables de entorno.
+- Los hooks mantienen suscripciones y estados de UI.
+- Los servicios son la frontera con Firebase, Cloudinary, Expo o utilidades externas.
+- `firestore.rules` es la autorizacion efectiva y debe mantenerse alineada con los servicios.
 
-1. `app/_layout.tsx` carga fuentes y monta `SesionProvider`.
-2. `SesionProvider` escucha Firebase Auth y consulta el perfil `usuarios/{uid}`. La configuración de correo verificado se controla en entorno.
-3. La ruta raíz `app/index.tsx` envía a acceso o a la ruta inicial según el rol.
-4. Los layouts de asistente, organizador y administrador aplican `GuardiaRol`. El layout de organizador también comparte `ProveedorPerfilOrganizador`.
-5. `backend/firestore.rules` comprueba identidad, rol y propiedad de los datos en el servidor. Ocultar una pantalla en el cliente no reemplaza estas reglas.
+### Alias y TypeScript
 
-### Flujo de registro
-
-`PantallaRegistro` → `useRegistro` y validaciones → `servicioAuth` crea la cuenta Auth → `servicioUsuarios` escribe el perfil público, privado y reserva del nombre de usuario → se envía correo de verificación y se cierra la sesión. Las reglas permiten registrarse como `asistente` u `organizador`, no como administrador. `crear-admin.cjs` es un script para crear el rol administrador usando emuladores.
-
-### Flujo de verificación del organizador
-
-`PantallaVerificacion` → hooks de `features/verificacion` → `servicioVerificacion` guarda `solicitudesVerificacion/{uid}` y utiliza `subirImagen` para enviar documentos a Cloudinary → la bandeja del administrador modifica el estado → `alCambiarSolicitudVerificacion` sincroniza `estadoVerificacion` y `estaVerificado` en `usuarios/{uid}`. Las reglas limitan quién puede leer y modificar cada documento.
-
-### Flujo de eventos
-
-- El organizador verificado completa `PantallaCrearEvento`; `servicioCrearEvento` sube la portada y crea el evento como `pendiente_aprobacion`.
-- `servicioEventos` alimenta el listado del organizador. El catálogo del asistente consulta solo eventos aprobados.
-- El administrador revisa el contenido y puede aprobar, devolver para corrección o rechazarlo.
-- Las ediciones siguen las reglas: un cambio sensible en evento con ventas se presenta como propuesta; el organizador no puede editar campos de venta ni saltarse la revisión.
-- `servicioGestionEvento` permite borrar solo un evento propio sin entradas vendidas.
-
-### Flujo de compra y validación: diferencia importante
-
-La compra de la app es simulada: el formulario no procesa pagos reales. `useCompra` coordina la experiencia y `features/asistente/servicios/servicioEntradas.ts` crea entradas y actualiza `vendidas` directamente en una transacción de Firestore. Las reglas actuales permiten esa escritura bajo límites y validaciones.
-
-También existe `backend/functions/src/modulos/entradas/comprarEntradas.ts`, una función callable que valida rol, cupo y límite y crea entradas con Firebase Admin. Está exportada desde `functions/src/index.ts`, pero el servicio de compra frontend revisado no la llama. Por tanto, no se debe describir la compra actual como exclusivamente ejecutada por backend. La forma de entrada generada por el callable tampoco es el ID determinista que espera la ruta directa; son dos implementaciones que deben mantenerse alineadas si se conecta la callable.
-
-El QR contiene los datos de identificación y token de la entrada. El organizador selecciona un evento y `servicioValidacion` comprueba evento/token/ventana de acceso y marca la entrada como usada mediante transacción; las reglas reservan esa actualización al organizador dueño.
-
-### Variables y servicios externos
-
-- `frontend/src/config/entorno.ts` lee variables Expo públicas para Firebase, emuladores y exigencia de correo verificado.
-- `frontend/src/infraestructura/firebase/cliente.ts` inicializa Firebase, configura persistencia de Auth con AsyncStorage y, opcionalmente, conecta emuladores.
-- `frontend/src/config/cloudinary.ts` lee nube y presets de carga. El secreto de API de Cloudinary no debe incluirse en la app.
-- `frontend/.env.example` es la plantilla de entorno. `frontend/.env` es local: esta guía no publica sus valores.
-- Para un dispositivo físico, `EXPO_PUBLIC_EMULADOR_HOST` debe ser una IP alcanzable de la computadora; `127.0.0.1` apunta al dispositivo mismo.
-
-## 3. Funciones por rol
-
-| Rol | Acceso y funciones conectadas | Restricciones principales |
-|---|---|---|
-| **Asistente** | Registro y perfil; explorar y abrir eventos aprobados; guardar favoritos; seguir organizadores; comprar entradas de forma simulada; consultar entradas/QR e historial; calificar eventos terminados; reportar eventos; consultar reportes propios y perfiles públicos de organizadores. | Solo lee/escribe sus datos propios. La compra no cobra dinero real. No administra eventos ni valida entradas. |
-| **Organizador** | Perfil y panel; solicitar/re-enviar verificación; ver eventos propios y sus estados; crear/editar eventos; consultar ventas, asistencia y reseñas; ver reportes recibidos y responderlos; seleccionar eventos y validar QR. | Debe estar verificado, con cuenta activa y sin suspensión vigente para crear/editar eventos. No puede aprobar sus eventos, cambiar ventas ni validar entradas de otro organizador. |
-| **Administrador** | Consultar panel/estadísticas; revisar solicitudes de verificación y eventos; moderar reportes y reseñas; suspender/reactivar eventos y suspender/rehabilitar organizadores. | El rol no se ofrece en el registro normal; se provisiona mediante el script de administrador. Las acciones deben cumplir `firestore.rules`. |
-
-## 4. Inventario completo de archivos del proyecto
-
-El inventario incluye los archivos propios de configuración, documentación, fuentes y recursos presentes en esta copia. Para que sea legible se listan los nombres por carpeta, no las dependencias de `node_modules/`, el contenido de `.git/` ni archivos internos generados por herramientas.
-
-### Raíz, documentación y backend
+`frontend/tsconfig.json` habilita TypeScript estricto y el alias:
 
 ```text
-estructura.txt
-docs/
-  guia-proyecto.md
-  modelo-datos.md
-backend/
-  .firebaserc
-  .gitignore
-  firebase.json
-  firestore-debug.log                         (local/generado)
-  firestore.indexes.json
-  firestore.rules
-  package.json
-  package-lock.json
-  public/
-    404.html
-    index.html
-  tests/
-    reglas.test.mjs
-  functions/
-    .eslintrc.js
-    .gitignore
-    firebase-debug.log                        (local/generado)
-    firestore-debug.log                       (local/generado)
-    package.json
-    package-lock.json
-    tsconfig.json
-    tsconfig.dev.json
-    scripts/
-      crear-admin.cjs
-    src/
-      index.ts
-      modulos/
-        entradas/
-          comprarEntradas.ts
-        verificacion/
-          alCambiarSolicitudVerificacion.ts
-    lib/                                       (salida generada por TypeScript)
-      index.js
-      index.js.map
-      modulos/entradas/                        (JS y mapas compilados)
-      modulos/verificacion/                    (JS y mapas compilados)
-    firebase-export-1795151321132RmHd1x/       (exportación local del emulador)
-      firebase-export-metadata.json
-      auth_export/
-        accounts.json
-        config.json
-      firestore_export/
-        firestore_export.overall_export_metadata
+@/ -> frontend/src/
 ```
 
-### Frontend: configuración y recursos
+Ejemplo: `@/features/auth` apunta a `frontend/src/features/auth`.
 
-```text
-frontend/
-  .claude/settings.json
-  .env                                      (local; no publicar su contenido)
-  .env.example
-  .gitignore
-  .vscode/extensions.json
-  .vscode/settings.json
-  AGENTS.md
-  CLAUDE.md
-  app.json
-  expo-env.d.ts
-  package.json
-  package-lock.json
-  tsconfig.json
-  assets/
-    imagenes/
-      concierto.jpg
-      ensenada.jpg
-    images/
-      android-icon-background.png
-      android-icon-foreground.png
-      android-icon-monochrome.png
-      favicon.png
-      icon.png
-      splash-icon.png
-```
+## 3. Dependencias y herramientas
 
-### Frontend: rutas `src/app/`
+### Frontend
 
-Cada ruta importa/reexporta una pantalla de `features/`; los grupos entre paréntesis organizan navegación sin agregarse a la URL.
-
-```text
-src/app/
-  _layout.tsx
-  index.tsx
-  (auth)/
-    _layout.tsx
-    iniciar-sesion.tsx
-    registro.tsx
-  asistente/
-    _layout.tsx
-    (pestanas)/
-      _layout.tsx
-      entradas.tsx
-      explorar.tsx
-      favoritos.tsx
-      perfil.tsx
-    entrada/[id].tsx
-    evento/[id].tsx
-    historial.tsx
-    mis-calificaciones.tsx
-    mis-reportes.tsx
-    organizador/[id].tsx
-    organizadores-seguidos.tsx
-  organizador/
-    _layout.tsx
-    (pestanas)/
-      _layout.tsx
-      crear.tsx
-      estadisticas.tsx
-      inicio.tsx
-      mis-eventos.tsx
-      perfil.tsx
-      validar-qr.tsx
-    crear.tsx
-    editar-evento.tsx
-    estadisticas-evento.tsx
-    estadisticas.tsx
-    inicio.tsx
-    mis-eventos.tsx
-    perfil.tsx
-    reportes.tsx
-    validar-qr.tsx
-    verificacion.tsx
-  administrador/
-    _layout.tsx
-    (pestanas)/
-      _layout.tsx
-      estadisticas.tsx
-      eventos.tsx
-      inicio.tsx
-      organizadores.tsx
-      reportes.tsx
-    moderacion.tsx
-    perfil.tsx
-```
-
-### Frontend: `src/features/`
-
-En cada dominio, `pantallas/` compone la interfaz, `componentes/` contiene piezas reutilizables, `hooks/` mantiene estado/listeners, `servicios/` accede a Firestore/Firebase/Cloudinary y `tipos.ts`/`utilidades/` define contratos y transformaciones. No todas las carpetas tienen todos esos subdirectorios.
-
-```text
-features/
-  auth/
-    constantes.ts, index.ts, tipos.ts
-    componentes/
-      DecoracionConcierto.tsx, EncabezadoAuth.estilos.ts, EncabezadoAuth.tsx,
-      GuardiaRol.tsx, IconoTicket.tsx, ModalAviso.estilos.ts, ModalAviso.tsx,
-      ModalRecuperarContrasenia.estilos.ts, ModalRecuperarContrasenia.tsx,
-      SelectorFecha.estilos.ts, SelectorFecha.tsx, SelectorRol.estilos.ts, SelectorRol.tsx
-    contexto/SesionContexto.ts, contexto/SesionProvider.tsx
-    hooks/
-      useInicioSesion.ts, useRecuperarContrasenia.ts, useRegistro.ts,
-      useSesion.ts, useTecladoScroll.ts
-    pantallas/
-      PantallaInicioSesion.estilos.ts, PantallaInicioSesion.tsx,
-      PantallaRegistro.estilos.ts, PantallaRegistro.tsx
-    servicios/servicioAuth.ts, servicios/servicioUsuarios.ts
-    utilidades/errores.ts, utilidades/rutas.ts, utilidades/validaciones.ts
-  asistente/
-    index.ts, tipos.ts, servicioCalificaciones.ts, servicioReportes.ts
-    componentes/
-      BarraCompra.tsx, BotonCorazon.tsx, BotonSeguir.tsx, CabeceraDetalle.tsx,
-      CampoPago.tsx, ChipsCategoria.tsx, DatosPrincipalesEvento.tsx,
-      EncabezadoAsistente.tsx, EncabezadoSimple.tsx, Estrellas.tsx,
-      FilaOrganizador.tsx, InsigniaEntrada.tsx, MetricasEvento.tsx,
-      ModalCalificar.tsx, ModalCompra.tsx, ModalEditarPerfil.tsx, ModalReportar.tsx,
-      SeccionCalificaciones.tsx, TarjetaEntrada.tsx, TarjetaEventoAsistente.tsx,
-      TarjetaOrganizadorDetalle.tsx, TarjetaUbicacion.tsx, VistaTarjeta.tsx
-    hooks/
-      useAccionesEvento.ts, useBarraEstadoAsistente.ts, useCalificaciones.ts,
-      useCatalogo.ts, useCompra.ts, useEntrada.ts, useEntradasDelEvento.ts,
-      useEventoPublico.ts, useEventosDelOrganizador.ts, useEventosFavoritos.ts,
-      useFavoritos.ts, useHistorialEventos.ts, useMisCalificacionesYReportes.ts,
-      useMisEntradas.ts, useOrganizadorPublico.ts, usePerfilAsistente.ts,
-      useReporteEvento.ts, useSeguidos.ts
-    pantallas/
-      PantallaDetalleEvento.estilos.ts, PantallaDetalleEvento.tsx,
-      PantallaEntradaQR.estilos.ts, PantallaEntradaQR.tsx, PantallaExplorar.estilos.ts,
-      PantallaExplorar.tsx, PantallaFavoritos.tsx, PantallaHistorialEventos.tsx,
-      PantallaMisCalificaciones.tsx, PantallaMisEntradas.estilos.ts,
-      PantallaMisEntradas.tsx, PantallaMisReportes.tsx,
-      PantallaOrganizadorPublico.estilos.ts, PantallaOrganizadorPublico.tsx,
-      PantallaOrganizadoresSeguidos.tsx, PantallaPerfilAsistente.estilos.ts,
-      PantallaPerfilAsistente.tsx
-    servicios/
-      servicioCalificaciones.ts, servicioCatalogo.ts, servicioEntradas.ts,
-      servicioFavoritos.ts, servicioMisEntradas.ts, servicioOrganizador.ts,
-      servicioPerfilAsistente.ts, servicioReportes.ts, servicioSeguidos.ts
-    utilidades/categorias.ts, utilidades/entradas.ts, utilidades/formato.ts,
-    utilidades/tarjeta.ts
-  administrador/
-    index.ts, tipos.ts
-    componentes/
-      AccesoRapidoAdmin.tsx, EncabezadoAdmin.estilos.ts, EncabezadoAdmin.tsx,
-      EncabezadoSeccionAdmin.tsx, FilaTarea.tsx, SelectorPeriodoAdmin.tsx,
-      TarjetaRanking.tsx, TarjetaResumen.tsx, BarrasDistribucion.tsx
-    hooks/useBarraClara.ts, hooks/useResumenAdministrador.ts
-    pantallas/PantallaInicioAdministrador.estilos.ts,
-    pantallas/PantallaInicioAdministrador.tsx
-    servicios/servicioResumenAdmin.ts
-    estadisticas/index.ts, estadisticas/pantallas/PantallaEstadisticasAdmin.tsx
-    eventos/index.ts, eventos/tipos.ts, eventos/hooks/useRevisionEventos.ts,
-    eventos/servicios/servicioRevisionEventos.ts,
-    eventos/pantallas/PantallaRevisionEventos.tsx,
-    eventos/componentes/ModalRevisionEvento.tsx,
-    eventos/componentes/TarjetaEventoAdmin.tsx
-    moderacion/index.ts, moderacion/constantes.ts,
-    moderacion/hooks/useModerarContenido.ts,
-    moderacion/pantallas/PantallaModerarContenido.tsx,
-    moderacion/servicios/servicioModerarContenido.ts
-    reportes/index.ts, reportes/tipos.ts, reportes/hooks/useModeracion.ts,
-    reportes/servicios/servicioModeracion.ts, reportes/pantallas/PantallaModeracion.tsx,
-    reportes/componentes/ModalReporte.tsx, reportes/componentes/TarjetaCalificacionAdmin.tsx,
-    reportes/componentes/TarjetaReporte.tsx
-    utilidades/calculosPlataforma.ts
-    verificaciones/index.ts, verificaciones/tipos.ts,
-    verificaciones/hooks/useBandejaVerificacion.ts,
-    verificaciones/servicios/servicioBandeja.ts,
-    verificaciones/pantallas/PantallaBandejaVerificacion.tsx,
-    verificaciones/componentes/ModalExpediente.tsx,
-    verificaciones/componentes/TarjetaSolicitud.tsx
-  crear-evento/
-    categorias.ts, index.ts, tipos.ts
-    componentes/CampoFechaHora.tsx, componentes/CampoFormulario.tsx,
-    componentes/FormularioEvento.tsx, componentes/SelectorFoto.tsx
-    hooks/useEventoParaEditar.ts, hooks/useFormularioEvento.ts
-    pantallas/PantallaCrearEvento.estilos.ts, pantallas/PantallaCrearEvento.tsx,
-    pantallas/PantallaEditarEvento.tsx
-    servicios/servicioCrearEvento.ts, servicios/servicioEditarEvento.ts
-    utilidades/validaciones.ts
-  estadisticas/
-    tipos.ts, index.ts, hooks/useDatosOrganizador.ts,
-    servicios/servicioEstadisticas.ts, utilidades/calculos.ts
-    pantallas/PantallaEstadisticas.tsx, pantallas/PantallaEstadisticasEvento.tsx
-    componentes/BarraProgreso.tsx, componentes/DistribucionEstrellas.tsx,
-    componentes/FilaRendimientoEvento.tsx, componentes/GraficaVentas.tsx,
-    componentes/ListaCalificaciones.tsx, componentes/PanelEstadisticas.tsx,
-    componentes/SelectorPeriodo.tsx, componentes/TarjetaKpi.tsx
-  eventos/
-    constantes.ts, index.ts, tipos.ts, hooks/useEventosOrganizador.ts,
-    servicios/servicioEventos.ts, utilidades/formato.ts
-    componentes/InsigniaEstadoEvento.estilos.ts, componentes/InsigniaEstadoEvento.tsx,
-    componentes/TarjetaEvento.estilos.ts, componentes/TarjetaEvento.tsx
-  gestion-evento/
-    index.ts, hooks/useGestionEvento.tsx,
-    servicios/servicioGestionEvento.ts, componentes/HojaAccionesEvento.tsx
-  organizador/
-    index.ts, tipos.ts, contexto/PerfilOrganizadorContexto.tsx,
-    hooks/useAccionCrearEvento.ts, hooks/useEstadoVerificacion.ts,
-    hooks/useResumenOrganizador.ts, servicios/servicioPerfilOrganizador.ts
-    pantallas/PantallaInicioOrganizador.estilos.ts, pantallas/PantallaInicioOrganizador.tsx,
-    pantallas/PantallaMisEventos.estilos.ts, pantallas/PantallaMisEventos.tsx,
-    pantallas/PantallaPerfilOrganizador.estilos.ts, pantallas/PantallaPerfilOrganizador.tsx
-    componentes/AccesoRapido.estilos.ts, componentes/AccesoRapido.tsx,
-    componentes/BannerVerificacion.estilos.ts, componentes/BannerVerificacion.tsx,
-    componentes/BotonCrearEvento.estilos.ts, componentes/BotonCrearEvento.tsx,
-    componentes/BotonCrearPestana.estilos.ts, componentes/BotonCrearPestana.tsx,
-    componentes/ListaEventosOrganizador.estilos.ts, componentes/ListaEventosOrganizador.tsx,
-    componentes/TarjetaMetrica.estilos.ts, componentes/TarjetaMetrica.tsx
-  perfil/
-    index.ts, pantallas/PantallaPerfil.estilos.ts, pantallas/PantallaPerfil.tsx
-  reportes-organizador/
-    index.ts, tipos.ts, hooks/useReportesOrganizador.ts,
-    servicios/servicioReportesOrganizador.ts,
-    pantallas/PantallaReportesOrganizador.tsx,
-    componentes/ListaReportesOrganizador.tsx
-  suspension-organizador/
-    index.ts, hooks/useSuspensionOrganizador.ts,
-    componentes/AvisoSuspension.tsx
-  validar-qr/
-    index.ts, tipos.ts, hooks/useEscaner.ts, hooks/useEventosValidables.ts,
-    servicios/servicioValidacion.ts, utilidades/qr.ts
-    pantallas/PantallaValidarQR.estilos.ts, pantallas/PantallaValidarQR.tsx
-    componentes/ListaEventosValidar.tsx, componentes/ResultadoEscaneo.tsx,
-    componentes/VisorEscaner.tsx
-  verificacion/
-    index.ts, tipos.ts, hooks/useFormularioVerificacion.ts,
-    hooks/useSolicitudVerificacion.ts, servicios/servicioVerificacion.ts,
-    utilidades/validaciones.ts
-    pantallas/PantallaVerificacion.estilos.ts, pantallas/PantallaVerificacion.tsx
-    componentes/AvisoObservaciones.estilos.ts, componentes/AvisoObservaciones.tsx,
-    componentes/CampoDocumento.estilos.ts, componentes/CampoDocumento.tsx,
-    componentes/FilaTerminos.estilos.ts, componentes/FilaTerminos.tsx,
-    componentes/TarjetaEstadoSolicitud.estilos.ts, componentes/TarjetaEstadoSolicitud.tsx
-```
-
-### Frontend: módulos compartidos e infraestructura
-
-```text
-src/compartido/
-  componentes/
-    BarraMarca.estilos.ts, BarraMarca.tsx, BotonContorno.estilos.ts, BotonContorno.tsx,
-    BotonIcono.estilos.ts, BotonIcono.tsx, BotonPrimario.estilos.ts, BotonPrimario.tsx,
-    CampoSelector.tsx, CampoTexto.estilos.ts, CampoTexto.tsx, EncabezadoPantalla.tsx,
-    FondoHero.tsx, IconoTicket.tsx, ModalCentrado.estilos.ts, ModalCentrado.tsx,
-    PantallaEnConstruccion.estilos.ts, PantallaEnConstruccion.tsx,
-    PestanasIconoArriba.tsx, PestanasSegmentadas.estilos.ts, PestanasSegmentadas.tsx,
-    SeparadorO.estilos.ts, SeparadorO.tsx, index.ts
-  navegacion/useOpcionesPestanas.ts
-  tema/colores.ts, tema/index.ts, tema/medidas.ts, tema/useFuentes.ts
-  utilidades/proximamente.ts, utilidades/sanitizar.ts,
-  utilidades/seleccionarImagen.ts, utilidades/useBarraEstado.ts
-src/config/cloudinary.ts, src/config/entorno.ts
-src/infraestructura/
-  cloudinary/index.ts, cloudinary/subirImagen.ts
-  firebase/cliente.ts, firebase/index.ts
-```
-
-Los archivos `.estilos.ts` son las hojas de estilo de sus componentes/pantallas homónimos; las imágenes son recursos de marca o contenido y no ejecutan lógica. `frontend/.env`, logs, exportaciones de emulador y `functions/lib/` son locales/generados, no fuentes canónicas ni documentación de secretos. No se expanden `node_modules/` ni `.git/`.
-
-## 5. Firestore: datos, autorización e índices
-
-`backend/firebase.json` enlaza Firestore con `firestore.rules` y `firestore.indexes.json`. Las colecciones y los permisos efectivos deben consultarse en esas reglas; los comentarios y la propuesta del modelo no las reemplazan.
-
-| Datos | Uso actual en la aplicación |
+| Libreria | Uso |
 |---|---|
-| `usuarios/{uid}`, `usuarios/{uid}/privado/perfil`, `nombresUsuario/{nombre}` | Perfil público, datos privados y reserva del nombre en el registro. |
-| `solicitudesVerificacion/{uid}` | Expediente y estado de verificación del organizador. |
-| `eventos/{id}` | Catálogo, paneles, publicación/revisión, edición y moderación. |
-| `entradas/{id}` | Entradas simuladas, datos para el QR y estado de acceso. |
-| `favoritos/{asistenteId_eventoId}`, `seguidos/{asistenteId_organizadorId}` | Preferencias del asistente. |
-| `reportes/{asistenteId_eventoId}`, `reportesOrganizador/{id}` | Denuncias, resolución administrativa y respuesta del organizador. |
-| `calificaciones/{asistenteId_eventoId}` | Reseñas y su moderación. |
-| `notificaciones/{id}` | Las reglas permiten lectura/actualización del destinatario, pero no se encontró un productor activo en Functions. |
+| `expo`, `expo-router` | ejecucion y navegacion por archivos |
+| `react`, `react-native`, `react-dom`, `react-native-web` | UI movil y web |
+| `firebase` | Authentication y Firestore |
+| `@react-native-google-signin/google-signin` | acceso con Google nativo |
+| `@react-native-async-storage/async-storage` | persistencia de Auth en React Native |
+| `expo-camera` | escaneo QR |
+| `expo-image-picker` | galeria y camara para fotos |
+| `expo-file-system` | lectura de imagenes antes de subirlas |
+| `expo-notifications` | permisos, tokens y recibo de push |
+| `expo-constants` | identificadores EAS y entorno |
+| `expo-font`, fuentes Montserrat | tipografia |
+| `react-native-safe-area-context` | areas seguras y notch |
+| `react-native-qrcode-svg` | generar codigos QR |
+| `react-native-svg`, `react-native-reanimated`, `react-native-worklets` | iconos, animacion y graficos |
+| `@expo/vector-icons` | iconografia |
+| `@react-navigation/bottom-tabs` | pestañas y barra inferior |
 
-Las reglas verifican pertenencia, roles y cambios permitidos. En particular, solo eventos aprobados son públicos; el organizador verificado/activo crea eventos pendientes; el administrador los dictamina; el comprador y la función callable están limitados por reglas/validaciones distintas; y el organizador dueño valida una entrada una sola vez. Las colecciones no declaradas no tienen permisos.
+### Backend
 
-Los índices compuestos están declarados en `backend/firestore.indexes.json` para catálogo por estado/fecha/categoría, eventos por organizador/estado y cambios propuestos, entradas por asistente/evento, reportes, reportes de organizador, calificaciones, favoritos, notificaciones y solicitudes de verificación. Si una consulta nueva requiere combinación de filtros/orden, debe actualizarse ese archivo.
+| Libreria | Uso |
+|---|---|
+| `firebase-admin` | acceso privilegiado desde Functions |
+| `firebase-functions` | triggers y funciones HTTPS callable |
+| `typescript` | compilacion a `lib/` |
+| `eslint` | lint de Functions |
+| `@firebase/rules-unit-testing`, `firebase` | pruebas de reglas |
 
-### Divergencia entre especificación y código
+## 4. Configuracion
 
-`docs/modelo-datos.md` fue escrito como diseño y varias afirmaciones ya no describen el código. En el repositorio actual:
+### Variables publicas del frontend
 
-- La app crea entradas directamente y las reglas permiten esa operación; la callable `comprarEntradas` también existe, pero no está conectada al servicio frontend.
-- El modelo dice que entradas, calificaciones y validación QR solo se escriben en backend; las reglas actuales permiten escritura de entradas y calificaciones desde el cliente, y actualización de uso de entradas por el organizador.
-- Hay colecciones y funcionalidades actuales de seguimiento, calificaciones, reportes y moderación que no coincidían con el alcance descrito en el modelo.
-- Los reportes/estadísticas se consultan desde la aplicación; no hay una función backend que recalcule promedios o cree notificaciones.
+Definidas en `frontend/src/config/entorno.ts`:
 
-Si se modifica cualquiera de esos contratos, actualizar juntos el servicio frontend, la callable (si aplica), las reglas y las pruebas. No tomar el modelo como prueba de despliegue o como descripción exacta de permisos actuales.
+| Variable | Uso |
+|---|---|
+| `EXPO_PUBLIC_FIREBASE_API_KEY` | API key Web de Firebase |
+| `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` | dominio de Auth |
+| `EXPO_PUBLIC_FIREBASE_PROJECT_ID` | proyecto Firebase |
+| `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET` | bucket configurado |
+| `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | sender ID |
+| `EXPO_PUBLIC_FIREBASE_APP_ID` | app Firebase |
+| `EXPO_PUBLIC_USAR_EMULADORES` | activa Auth/Firestore Emulator |
+| `EXPO_PUBLIC_EMULADOR_HOST` | host alcanzable por el dispositivo |
+| `EXPO_PUBLIC_EXIGIR_CORREO_VERIFICADO` | exige email verificado |
+| `EXPO_PUBLIC_GOOGLE_WEB_AUTH_CLIENT_ID` o `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | cliente web de Google Sign-In |
+| `EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME` | nube de Cloudinary |
+| `EXPO_PUBLIC_CLOUDINARY_PRESET_VERIFICACION` | preset de documentos |
+| `EXPO_PUBLIC_CLOUDINARY_PRESET_EVENTOS` | preset de portadas/perfiles |
 
-## 6. Backend y operaciones
+El secreto de Cloudinary nunca debe incluirse en el cliente. Los presets deben ser seguros segun su configuracion.
 
-- `functions/src/index.ts` establece límite global de instancias y exporta las funciones.
-- `alCambiarSolicitudVerificacion.ts` escucha escrituras en solicitudes y copia cambios de estado al perfil del organizador.
-- `comprarEntradas.ts` realiza compra callable transaccional, comprueba usuario/evento/cupo/límite y crea entradas mediante Firebase Admin. El cliente actual aún no la invoca.
-- `scripts/crear-admin.cjs` crea una cuenta administradora con emuladores; no apuntarlo a producción sin un proceso de aprovisionamiento seguro.
-- `firestore.rules` es control de acceso; `tests/reglas.test.mjs` prueba reglas con el emulador. Ninguna de estas piezas confirma que la configuración esté desplegada.
-- `public/index.html` y `public/404.html` son páginas estáticas de Hosting, no forman parte del bundle Expo.
+El EAS project ID esta en `frontend/app.json` y se usa para obtener el Expo Push Token.
 
-## 7. Desarrollo y pruebas
+### Emuladores
 
-### Ejecutar Expo
+`backend/firebase.json` configura:
 
-1. Preparar `frontend/.env` a partir de `frontend/.env.example` sin subir los valores locales.
-2. Opcionalmente arrancar Auth y Firestore Emulator desde `backend/` y configurar un host accesible desde el dispositivo.
-3. Desde `frontend/`, usar `npm start`, `npm run android`, `npm run ios` o `npm run web`.
+- Auth en `9099`;
+- Firestore en `8080`;
+- Functions en `5001`;
+- Hosting en `5000`;
+- UI de emuladores en `4000`.
 
-### Firebase, reglas y Functions
+Para un dispositivo fisico, `EXPO_PUBLIC_EMULADOR_HOST` debe ser la IP LAN de la computadora. `127.0.0.1` apunta al propio telefono.
 
-- Desde `backend/`: `npm run test:reglas` inicia el emulador de Firestore y ejecuta `tests/reglas.test.mjs`.
-- Desde `backend/functions/`: `npm run build` compila TypeScript y `npm run lint` ejecuta ESLint.
-- `backend/firebase.json` configura emuladores, Hosting y hooks de lint/build antes del despliegue de Functions.
-- El script de administrador es para emuladores. No se debe ejecutar con credenciales o proyecto de producción.
+## 5. Sesion y autenticacion
 
-Las pruebas de reglas validan autorización en el emulador; no validan por sí solas las pantallas, los flujos de compra callable ni el despliegue.
+### Componentes principales
 
-## 8. Convenciones para cambios futuros
+- `src/app/_layout.tsx` carga fuentes, monta `AvisosProvider` y `SesionProvider`.
+- `src/features/auth/contexto/SesionProvider.tsx` escucha `onAuthStateChanged`, lee `usuarios/{uid}` y expone el usuario/perfil global.
+- `src/features/auth/hooks/useSesion.ts` ofrece el contexto a componentes.
+- `src/features/auth/componentes/GuardiaRol.tsx` impide rutas ajenas al rol.
+- `src/features/auth/servicios/servicioAuth.ts` realiza registro, login, Google, recuperacion y cambio de contraseña.
+- `src/features/auth/servicios/servicioUsuarios.ts` crea y lee perfiles y reserva nombres.
 
-1. Mantener `app/` como capa de rutas y layouts, y poner comportamiento reutilizable en `features/<dominio>/`.
-2. Compartir UI/tema desde `compartido/` y centralizar SDKs externos en `infraestructura/`.
-3. Al tocar datos, revisar en conjunto servicios frontend, reglas, índices y pruebas de reglas.
-4. Para acciones que deban ser privilegiadas, usar una Cloud Function y conectarla explícitamente desde el cliente; no basta con exportarla.
-5. Mantener `docs/modelo-datos.md` como modelo/diseño y esta guía como descripción del código actual. Indicar con claridad qué es propuesta y qué está implementado.
-6. No incluir secretos ni valores locales de `.env`, exportaciones de Firebase o logs en documentación o control de versiones.
+### Flujo de correo y contraseña
+
+1. El usuario completa el formulario.
+2. `useRegistro` o `useInicioSesion` valida espacios, formatos y campos obligatorios.
+3. El hook llama a `servicioAuth`.
+4. Firebase Auth crea o identifica la cuenta.
+5. El perfil se lee desde `usuarios/{uid}`.
+6. `SesionProvider` actualiza la sesion.
+7. `app/index.tsx` redirige segun el rol.
+
+Las acciones criticas tienen guardas contra doble toque y deshabilitan el boton durante la carga.
+
+### Flujo sin internet
+
+Los errores de Auth con `auth/network-request-failed` y los codigos de red se convierten en avisos cotidianos:
+
+- "No hay conexión a internet. Revisa tu red y vuelve a intentarlo."
+- "No pudimos conectarnos. Revisa tu conexión a internet e inténtalo de nuevo."
+
+Los errores tecnicos no se muestran al usuario. El estado de carga se libera en `finally`, permitiendo reintentar.
+
+### Registro con Google
+
+Google Sign-In esta cargado de forma perezosa para no romper Expo Go.
+
+- Si ya existe perfil, `SesionProvider` inicia la sesion normal.
+- Si no existe perfil, la ruta de acceso muestra `completar-perfil`.
+- El perfil se crea usando el correo de Google.
+- Si el modulo nativo no existe o no hay configuracion, se muestra un aviso.
+
+### Recuperacion
+
+`useRecuperarContrasenia` valida el correo, bloquea doble envio y envuelve el pedido en estado de carga. El modal informa que, si el correo existe, se envio el enlace.
+
+## 6. Navegacion
+
+### Ruta de arranque
+
+`src/app/index.tsx`:
+
+- sin perfil: `/iniciar-sesion`;
+- asistente: `/asistente/explorar`;
+- organizador: `/organizador/inicio`;
+- administrador: `/administrador/inicio`.
+
+### Rutas de autenticacion
+
+```text
+src/app/(auth)/_layout.tsx
+src/app/(auth)/iniciar-sesion.tsx
+src/app/(auth)/registro.tsx
+src/app/(auth)/completar-perfil.tsx
+```
+
+El layout detecta perfil pendiente de Google y mantiene a la persona en completar perfil.
+
+### Rol asistente
+
+Pestañas:
+
+```text
+inicio/explorar
+Mis eventos/entradas
+Favoritos
+Perfil
+```
+
+Rutas secundarias:
+
+- `asistente/evento/[id]`: detalle y compra.
+- `asistente/entrada/[id]`: QR de una entrada.
+- `asistente/organizador/[id]`: perfil publico.
+- historial, calificaciones, reportes y organizadores seguidos.
+
+### Rol organizador
+
+Pestañas:
+
+```text
+inicio
+mis-eventos
+crear
+validar-qr
+estadisticas
+```
+
+Rutas secundarias:
+
+- crear evento;
+- editar evento;
+- entradas vendidas;
+- estadisticas de evento;
+- reportes;
+- verificacion;
+- configuracion/perfil.
+
+### Rol administrador
+
+Pestañas:
+
+```text
+inicio
+organizadores
+eventos
+reportes
+estadisticas
+```
+
+Rutas secundarias:
+
+- moderacion;
+- perfil;
+- configuracion.
+
+Las rutas incluyen layouts `GuardiaRol` que bloquean accesos del rol incorrecto. Las reglas de Firestore agregan una segunda barrera obligatoria.
+
+## 7. Estructura de carpetas
+
+### Raiz
+
+| Elemento | Responsabilidad |
+|---|---|
+| `frontend/` | aplicacion Expo |
+| `backend/` | Firebase, reglas, indices, Functions, pruebas y Hosting |
+| `docs/` | guia general y modelo de datos |
+| `estructura.txt` | lista o snapshot historico de estructura |
+
+No deben enviarse logs, exportaciones locales ni secretos.
+
+### Frontend: archivos de configuracion
+
+| Archivo | Responsabilidad |
+|---|---|
+| `app.json` | nombre, package Android, plugins, iconos y EAS |
+| `app.config.js` | google-services segun variable |
+| `eas.json` | perfiles de build |
+| `package.json` | dependencias y scripts |
+| `tsconfig.json` | modo estricto y alias `@/` |
+| `expo-env.d.ts` | tipos Expo |
+| `google-services.json` | configuracion Android |
+| `assets/` | imagenes de interfaz |
+
+### `src/app/`
+
+Archivos con `_layout.tsx` definen la estructura de navegacion. Los archivos planos son rutas exportadas que normalmente reexportan una pantalla de `features/`.
+
+Importante:
+
+- `app/index.tsx` decide la ruta inicial;
+- `_layout.tsx` monta proveedores globales;
+- `(pestanas)` crea barras inferiores;
+- `[id].tsx` y rutas dinamicas reciben parametros con `useLocalSearchParams`;
+- `(auth)` agrupa pantallas sin sesion.
+
+### `src/compartido/`
+
+| Carpeta | Responsabilidad |
+|---|---|
+| `componentes/` | ModalCentrado, botones, campos, encabezados, pestañas, fondo hero y componentes reutilizables |
+| `avisos/` | proveedor global de mini-modales para errores, confirmaciones e informacion |
+| `navegacion/` | opciones comunes de pestañas |
+| `tema/` | colores, medidas, fuentes y exports |
+| `utilidades/` | imagen, sanitizacion, barra de estado, selección de archivos y mensajes proximamente |
+
+`ModalCentrado` usa `Modal`, `KeyboardAvoidingView`, `ScrollView`, areas seguras e insets. `AvisosProvider` permite informar o confirmar desde hooks sin depender de `Alert.alert`.
+
+Los botones compartidos aceptan estados de carga y deshabilitado; los modales criticos mantienen botones visibles fuera del area desplazable cuando corresponda.
+
+### `src/config/`
+
+- `entorno.ts`: variables publicas, emuladores y correo verificado.
+- `cloudinary.ts`: nombre de nube y presets.
+
+### `src/infraestructura/`
+
+- `firebase/cliente.ts`: crea app Auth/Firestore y persistencia AsyncStorage.
+- `firebase/index.ts`: exporta la infraestructura.
+- `cloudinary/subirImagen.ts`: conversion base64, timeout, fetch y respuesta.
+
+### `src/features/auth/`
+
+| Parte | Responsabilidad |
+|---|---|
+| `componentes/` | decoracion, encabezados, selector de fecha/rol, guardia y modales |
+| `contexto/` | estado global de sesion |
+| `hooks/` | login, registro, Google, recuperacion y ajuste de teclado |
+| `pantallas/` | inicio de sesion, registro y completar perfil |
+| `servicios/` | Firebase Auth y perfiles |
+| `utilidades/` | errores, validaciones y rutas |
+| `tipos.ts` | contratos de usuario |
+
+### `src/features/asistente/`
+
+| Parte | Responsabilidad |
+|---|---|
+| `componentes/` | tarjetas de eventos, compra, QR, favoritos, calificar/reportar y perfil |
+| `hooks/` | catalogo, detalle, compra, favoritos, seguimientos, calificaciones y perfil |
+| `pantallas/` | explorar, detalle, entradas, favoritos, organizador, historial y perfil |
+| `servicios/` | consultas y escrituras Firestore/Cloudinary |
+| `utilidades/` | categorias, formato, estados de entrada y tarjeta simulada |
+| `tipos.ts` | eventos, entradas, reportes y calificaciones |
+
+### `src/features/organizador/`
+
+| Parte | Responsabilidad |
+|---|---|
+| `componentes/` | accesos, banner de verificacion, tarjetas y botones |
+| `contexto/` | perfil organizador compartido |
+| `hooks/` | accion crear, estado de verificacion y resumen |
+| `pantallas/` | inicio, eventos y perfil |
+| `servicios/` | perfil organizador |
+
+### `src/features/crear-evento/`
+
+Contiene categoria, formulario, campos de fecha/hora, carga de foto, validacion y servicios de crear/editar. Las modificaciones aprobadas siguen las reglas de eventos con o sin ventas.
+
+### `src/features/eventos/` y `gestion-evento/`
+
+`eventos/` comparte estado, tarjeta, formato y consultas del organizador. `gestion-evento/` maneja acciones, eliminacion y hoja inferior.
+
+### `src/features/estadisticas/`
+
+Contiene KPIs, graficas, rendimiento, entradas vendidas, distribucion de estrellas y calculos.
+
+### `src/features/verificacion/`
+
+Contiene formulario, documentos, observaciones, estado de solicitud, hooks y servicio de envio. Las imagenes pasan por Cloudinary y la solicitud se escribe en `solicitudesVerificacion/{uid}`.
+
+### `src/features/validar-qr/`
+
+Contiene permisos de camara, visor, lista de eventos validables, lectura QR, ventana temporal y transaccion para marcar entradas usadas.
+
+### `src/features/administrador/`
+
+| Subdominio | Responsabilidad |
+|---|---|
+| `eventos/` | revision y aprobacion de eventos/cambios |
+| `verificaciones/` | expediente y resolucion de organizadores |
+| `reportes/` | moderacion de reportes y calificaciones |
+| `moderacion/` | suspension/reactivacion de eventos y cuentas |
+| `estadisticas/` | metricas administrativas |
+| `componentes/` y `pantallas/` | resumen y UI |
+
+### `src/features/notificaciones/`
+
+- `CampanaAvisos` muestra el badge.
+- `useAvisos` escucha avisos personales y avisos colectivos de administradores.
+- `servicioNotificaciones` crea, escucha y marca notificaciones.
+- `servicioPush` registra Expo Push Tokens, envia Expo Push y procesa el toque.
+- `PantallaNotificaciones` permite leer todo o tocar un aviso.
+- `tipos.ts` y `presentacion.ts` definen tipos, iconos y colores.
+
+### `src/features/recordatorios/`
+
+Programa recordatorios locales 24 horas y 2 horas antes para eventos favoritos o con entradas. Limpia recordatorios que dejan de aplicar.
+
+### `src/features/configuracion/`
+
+Ayuda, legales, perfil, contraseña, foto, contenido editable y configuracion por rol.
+
+### Otros features
+
+- `perfil/`: perfil generico.
+- `reportes-organizador/`: reportes recibidos y respuesta.
+- `suspension-organizador/`: aviso de suspension.
+
+## 8. Flujos de datos principales
+
+### Autenticacion
+
+```text
+Pantalla -> hook -> servicioAuth -> Firebase Auth
+                           |
+                           +-> SesionProvider -> obtenerPerfil -> usuarios/{uid}
+                                                   |
+                                                   +-> Redirect por rol
+```
+
+El correo verificado y las cuentas bloqueadas se controlan en `SesionProvider`.
+
+### Catalogo y favoritos
+
+```text
+useCatalogo -> onSnapshot(eventos estado=aprobado)
+useFavoritos -> onSnapshot/favoritos/{uid_evento}
+TarjetaEvento -> servicioFavoritos
+```
+
+Las listas manejan estados de carga, error y vacio.
+
+### Creacion y revision de eventos
+
+```text
+FormularioEvento -> servicioCrearEvento/EditarEvento
+                  -> Cloudinary para portada
+                  -> eventos/{id}
+                  -> notificacion al administrador
+
+Administrador -> servicioRevisionEventos
+               -> actualiza estado/observaciones
+               -> notificacion al organizador
+```
+
+Las reglas limitan quien publica, revisa o edita.
+
+### Compra
+
+```text
+ModalCompra -> useCompra -> servicioEntradas
+                         -> transaccion Firestore
+                         -> actualiza vendidas
+                         -> crea entradas/{uid_evento_numero}
+                         -> genera token QR
+                         -> aviso al organizador
+```
+
+La compra es simulada: no procesa una pasarela real ni guarda datos bancarios.
+
+### QR
+
+```text
+PantallaValidarQR -> permiso camara
+                  -> selecciona evento
+                  -> lee entradaId/eventoId/token
+                  -> servicioValidacion
+                  -> comprueba ventana y propiedad
+                  -> transaccion actualiza usada/usadaEn/validadaPor
+```
+
+### Verificacion de organizador
+
+```text
+Organizador -> Cloudinary -> solicitudesVerificacion/{uid}
+            -> avisarAdministradores
+            -> push a tokens de administradores
+
+Administrador -> resolverSolicitud
+              -> aprobada/rechazada/correccion_requerida
+              -> notificacion al organizador
+              -> push al organizador
+              -> trigger sincroniza usuarios/{uid}
+```
+
+### Notificaciones push y campana
+
+```text
+Accion dentro de la app
+  -> addDoc(notificaciones)
+  -> registrar/consultar tokensPush
+  -> POST a Expo Push
+  -> dispositivo recibe y guarda ruta/notificacionId
+
+Campana
+  -> CampanaAvisos -> useAvisos -> onSnapshot
+  -> badge con cantidad no leida
+  -> tocar abre /notificaciones
+  -> tocar fila marca leida y navega a ruta
+  -> tocar push marca leida y navega
+```
+
+El push remoto no funciona en Expo Go Android; esta orientado a APK/build de desarrollo o builds posteriores. Denegar permisos no impide usar la app.
+
+## 9. Firestore
+
+### Colecciones actuales
+
+| Coleccion | Uso |
+|---|---|
+| `usuarios/{uid}` | perfil publico, rol y estado |
+| `usuarios/{uid}/privado/perfil` | correo, nacimiento, telefono y datos privados |
+| `nombresUsuario/{nombreNormalizado}` | reserva de nombre |
+| `solicitudesVerificacion/{uid}` | expedientes de organizador |
+| `eventos/{eventoId}` | eventos y revision |
+| `entradas/{entradaId}` | boletos, snapshots y QR |
+| `favoritos/{uid_evento}` | favoritos |
+| `seguidos/{uid_organizador}` | seguimiento |
+| `reportes/{uid_evento}` | reportes de asistentes |
+| `reportesOrganizador/{id}` | reportes visibles al organizador |
+| `calificaciones/{uid_evento}` | calificaciones |
+| `notificaciones/{id}` | bandeja |
+| `tokensPush/{uid}` | Expo Push Token por cuenta |
+
+Las reglas estan en `backend/firestore.rules`. Las consultas compuestas estan en `backend/firestore.indexes.json`.
+
+La propuesta historica esta en `docs/modelo-datos.md`; el codigo actual puede diferir. Ante cambios, actualizar modelo, reglas, servicios y pruebas juntas.
+
+## 10. UI, modales y resiliencia
+
+### Sistema de avisos
+
+`AvisosProvider` se monta en `_layout.tsx` y expone `mostrarAviso()`.
+
+Soporta:
+
+- aviso simple;
+- error;
+- exito;
+- confirmacion con dos botones;
+- accion secundaria;
+- cierre y callbacks.
+
+No se usa `Alert.alert` en `frontend/src`.
+
+### Formularios y teclado
+
+Los formularios usan:
+
+- `KeyboardAvoidingView`;
+- `ScrollView`;
+- `keyboardShouldPersistTaps="handled"`;
+- padding inferior suficiente;
+- `useSafeAreaInsets`;
+- `maxLength`;
+- validaciones con `.trim()`;
+- filtros numericos.
+
+`ModalEditarPerfil`, compra, reporte, calificacion, contraseñas, revisiones administrativas y modales de contenido siguen este patron.
+
+### Loader y doble toque
+
+Los botones criticos usan `cargando`, `guardando`, `procesando` o refs de bloqueo. Las operaciones finalmente liberan el estado para permitir reintento.
+
+### Orientacion
+
+`app.json` fija orientacion retrato, pero pantallas con ScrollView y modales con insets pueden adaptarse a cambios o tamaños pequeños.
+
+### Estados vacios
+
+Las listas principales muestran mensajes amigables cuando no hay elementos:
+
+- catalogo;
+- favoritos;
+- entradas;
+- historial;
+- calificaciones;
+- reportes;
+- solicitudes;
+- notificaciones.
+
+## 11. Cloud Functions
+
+`backend/functions/src/index.ts` exporta:
+
+- `comprarEntradas`;
+- `alCambiarSolicitudVerificacion`.
+
+`comprarEntradas.ts` es una callable que valida usuario, evento, cupo y limite por persona. El flujo frontend actual usa una transaccion directa de Firestore y no llama a esta callable.
+
+`alCambiarSolicitudVerificacion.ts` escucha cambios en `solicitudesVerificacion/{uid}` y sincroniza:
+
+- `estadoVerificacion`;
+- `estaVerificado`.
+
+No contiene por si sola el envio de notificaciones de verificacion.
+
+## 12. Backend y pruebas
+
+`backend/package.json` ofrece:
+
+```powershell
+npm run test:reglas
+```
+
+Inicia el emulador de Firestore y ejecuta `backend/tests/reglas.test.mjs`.
+
+`backend/functions/package.json` ofrece:
+
+```powershell
+npm run lint
+npm run build
+npm run serve
+npm run deploy
+npm run logs
+```
+
+El script `crear-admin.cjs` solo esta pensado para emulador por las variables de host configuradas en el proceso.
+
+No lanzar scripts de administracion contra produccion sin un proceso seguro.
+
+## 13. Levantar el proyecto
+
+### Frontend
+
+Desde `frontend/`:
+
+```powershell
+npm install
+npm start
+npm run android
+npm run ios
+npm run web
+```
+
+Crear un archivo local `.env` a partir de `.env.example` o definir las variables requeridas en el entorno.
+
+Para dispositivos fisicos:
+
+- configurar Firebase;
+- configurar Cloudinary;
+- configurar Google;
+- configurar el host LAN si se usan emuladores;
+- usar APK/build de desarrollo para probar Expo Push.
+
+### Backend
+
+Desde `backend/`:
+
+```powershell
+npm install
+npm run test:reglas
+```
+
+Desde `backend/functions/`:
+
+```powershell
+npm install
+npm run lint
+npm run build
+npm run serve
+```
+
+## 14. Convenciones para continuar
+
+1. Crear una ruta en `src/app/` y mover la logica reutilizable a `src/features/<dominio>/`.
+2. Usar aliases `@/` y tipos estrictos.
+3. Mantener pantallas como composicion y hooks como estado/listeners.
+4. Acceder a Firebase desde `servicios/`, no desde componentes o layouts.
+5. Usar `AvisosProvider` para mensajes, errores y confirmaciones.
+6. Usar `ModalCentrado` o modales adaptados con safe areas y teclado.
+7. Proteger doble toque y liberar loaders en `finally`.
+8. Validar `.trim()`, limites y datos numericos antes de Firestore.
+9. Revisar y actualizar Firestore rules e indices al agregar consultas o colecciones.
+10. Agregar pruebas de reglas para nuevos permisos o tipos de aviso.
+11. Nunca incluir secretos, API secrets o cuentas locales en la guia o el repositorio.
+12. Al cambiar notificaciones, actualizar tipos, presentacion, reglas, push, rutas y listeners juntos.
+13. Al cambiar modelos, actualizar `modelo-datos.md` y esta guia.

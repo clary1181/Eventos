@@ -26,15 +26,11 @@ const aEvento = (id: string, d: DocumentData): Evento => ({
   totalCalificaciones: d.totalCalificaciones,
 });
 
-// Eventos de un organizador, del más reciente al más antiguo. Devuelve la función para dejar de escuchar.
-// Usa el índice (organizadorId ASC, creadoEn DESC) de firestore.indexes.json.
-// Eventos de un organizador, del más reciente al más antiguo. Se ordena aquí, así la consulta no necesita índice.
 export const escucharEventosDeOrganizador = (
   organizadorId: string,
   alCambiar: (eventos: Evento[]) => void,
   alError: (error: Error) => void,
 ) => {
-  // Un evento recién creado aún no tiene el sello de hora del servidor: se trata como el más nuevo
   const instante = (d: DocumentData) => (d.creadoEn instanceof Timestamp ? d.creadoEn.toMillis() : Number.MAX_SAFE_INTEGER);
 
   return onSnapshot(

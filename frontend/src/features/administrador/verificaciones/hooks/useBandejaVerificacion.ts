@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { useSesion } from '@/features/auth';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import {
   escucharSolicitudes, obtenerPerfilResumido, resolverSolicitud,
 } from '../servicios/servicioBandeja';
@@ -23,11 +23,12 @@ export function useBandejaVerificacion() {
     );
   }, []);
 
-  // Trae el nombre de cada organizador una sola vez
   useEffect(() => {
     solicitudes.forEach((s) => {
       if (perfiles[s.id]) return;
-      obtenerPerfilResumido(s.id).then((p) => setPerfiles((previos) => ({ ...previos, [s.id]: p })));
+      obtenerPerfilResumido(s.id).then((p) => setPerfiles((previos) => ({ ...previos, [s.id]: p }))).catch((e) => {
+        console.warn('No se pudo cargar el perfil del solicitante:', e);
+      });
     });
   }, [solicitudes, perfiles]);
 
@@ -37,7 +38,6 @@ export function useBandejaVerificacion() {
     return c;
   }, [solicitudes]);
 
-  // Pendientes: la más antigua primero; el resto, la revisada más reciente primero
   const lista = useMemo(() => {
     const t = (d: Date | null) => d?.getTime() ?? 0;
     return solicitudes
@@ -51,10 +51,7 @@ export function useBandejaVerificacion() {
     async (nuevoEstado: Exclude<EstadoSolicitud, 'pendiente'>, observaciones: string) => {
       if (!seleccionada || !perfil) return;
       if (nuevoEstado !== 'aprobada' && observaciones.trim().length === 0) {
-        Alert.alert(
-          'Observaciones requeridas',
-          nuevoEstado === 'rechazada' ? 'Escribe el motivo del rechazo.' : 'Indica qué debe corregir el organizador.'
-        );
+        mostrarAviso({ titulo: 'Observaciones requeridas', mensaje: nuevoEstado === 'rechazada' ? 'Escribe el motivo del rechazo.' : 'Indica qué debe corregir el organizador.', tipo: 'error' });
         return;
       }
       setProcesando(true);
@@ -63,7 +60,7 @@ export function useBandejaVerificacion() {
         setSeleccionadaId(null);
       } catch (e) {
         console.error('Error al resolver la solicitud:', e);
-        Alert.alert('Error', 'No se pudo guardar la decisión. Revisa tu conexión e inténtalo de nuevo.');
+        mostrarAviso({ titulo: 'Error', mensaje: 'No se pudo guardar la decisión. Revisa tu conexión e inténtalo de nuevo.', tipo: 'error' });
       } finally {
         setProcesando(false);
       }

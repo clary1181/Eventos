@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { EncabezadoPantalla } from '@/compartido/componentes/EncabezadoPantalla';
@@ -68,6 +69,7 @@ function TarjetaReincidente({ r, alSancionar, alLevantar }: { r: Reincidente; al
 }
 
 export function PantallaModerarContenido() {
+  const inset = useSafeAreaInsets();
   useBarraClara();
   const router = useRouter();
   const m = useModerarContenido();
@@ -140,8 +142,8 @@ export function PantallaModerarContenido() {
       </ScrollView>
 
       <Modal visible={!!m.aSancionar} transparent animationType="fade" onRequestClose={cerrarSancion}>
-        <KeyboardAvoidingView style={estilos.fondoModal} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={estilos.modal}>
+        <KeyboardAvoidingView style={estilos.fondoModal} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={[estilos.modal, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
             <Text style={estilos.tituloModal}>Suspender cuenta</Text>
             <Text style={estilos.detalle}>{m.aSancionar?.organizador.nombre} no podrá crear ni editar eventos durante este tiempo. Podrá seguir entrando a la app y verá el motivo.</Text>
             <View style={estilos.filaChips}>
@@ -159,8 +161,8 @@ export function PantallaModerarContenido() {
       </Modal>
 
       <Modal visible={!!m.aSuspender} transparent animationType="fade" onRequestClose={cerrarModal}>
-        <KeyboardAvoidingView style={estilos.fondoModal} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={estilos.modal}>
+        <KeyboardAvoidingView style={estilos.fondoModal} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={[estilos.modal, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
             <Text style={estilos.tituloModal}>Suspender evento</Text>
             <Text style={estilos.detalle}>"{m.aSuspender?.titulo}" dejará de mostrarse en el catálogo. Las entradas ya vendidas se conservan.</Text>
             <TextInput style={estilos.entrada} multiline maxLength={500} value={motivo} onChangeText={setMotivo} placeholder="Motivo de la suspensión (lo verá el organizador)" placeholderTextColor={Colores.textoSuave} textAlignVertical="top" />

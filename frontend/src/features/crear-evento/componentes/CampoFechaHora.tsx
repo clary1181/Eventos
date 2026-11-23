@@ -23,7 +23,6 @@ const formatearHora = (t: string) => {
   return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
 };
 
-// Devuelve la fecha real o null si el formato o el calendario no son válidos (p. ej. 31/02)
 function interpretar(fecha: string, hora: string): Date | null {
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(fecha) || !/^\d{2}:\d{2}$/.test(hora)) return null;
   const [dia, mes, anio] = fecha.split('/').map(Number);
@@ -33,12 +32,10 @@ function interpretar(fecha: string, hora: string): Date | null {
   return f.getFullYear() === anio && f.getMonth() === mes - 1 && f.getDate() === dia ? f : null;
 }
 
-// Fecha y hora escritas con formato automático. No usa módulos nativos, funciona en Expo Go.
 export function CampoFechaHora({ etiqueta, valor, alCambiar }: Propiedades) {
   const [fecha, setFecha] = useState(valor ? textoFecha(valor) : '');
   const [hora, setHora] = useState(valor ? textoHora(valor) : '');
 
-  // Si el valor cambia desde fuera (p. ej. el fin se propone solo), se refleja en los campos
   useEffect(() => {
     if (!valor) return;
     const actual = interpretar(fecha, hora);

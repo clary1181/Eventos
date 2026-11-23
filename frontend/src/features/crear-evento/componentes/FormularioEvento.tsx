@@ -15,17 +15,16 @@ interface Propiedades {
   titulo: string;
   subtitulo: string;
   textoBoton: string;
-  superior?: ReactNode; // p. ej. el botón de volver
-  avisos?: ReactNode;   // avisos extra (como las correcciones del administrador)
+  superior?: ReactNode;
+  avisos?: ReactNode;
 }
 
-// Cuerpo del formulario, compartido por "Crear evento" y "Corregir evento"
 export function FormularioEvento({ formulario: f, titulo, subtitulo, textoBoton, superior, avisos }: Propiedades) {
   const { top } = useSafeAreaInsets();
   const { datos, cambiar, cambiarInicio, elegirFoto, enviar, enviando, reinicios } = f;
 
   return (
-    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         key={reinicios}
         contentContainerStyle={[estilos.contenido, { paddingTop: top + 16 }]}

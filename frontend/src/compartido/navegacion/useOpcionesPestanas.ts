@@ -1,7 +1,6 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colores, Fuentes } from '@/compartido/tema';
 
-// Aspecto común de las barras de pestañas: blanca, esquinas superiores redondeadas y sombra
 export function useOpcionesPestanas() {
   const { bottom } = useSafeAreaInsets();
   return {

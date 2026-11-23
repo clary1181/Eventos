@@ -6,7 +6,6 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 if (getApps().length === 0) initializeApp();
 const db = getFirestore();
 
-// Límite de entradas por persona en cada evento (decisión D3). Debe coincidir con la app.
 const MAX_ENTRADAS_POR_EVENTO = 5;
 
 interface Peticion {
@@ -14,8 +13,6 @@ interface Peticion {
   cantidad?: unknown;
 }
 
-// Compra simulada: no existe procesador de pagos y NUNCA se reciben datos de tarjeta.
-// Las entradas solo se crean aquí (las reglas de Firestore impiden escribirlas desde la app).
 export const comprarEntradas = onCall({ region: 'us-west1' }, async (peticion) => {
   const uid = peticion.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Inicia sesión para comprar entradas.');
@@ -34,10 +31,9 @@ export const comprarEntradas = onCall({ region: 'us-west1' }, async (peticion) =
   }
 
   const refEvento = db.doc(`eventos/${eventoId}`);
-  const ordenId = db.collection('entradas').doc().id; // identificador aleatorio que agrupa los boletos de esta compra
+  const ordenId = db.collection('entradas').doc().id;
 
   return db.runTransaction(async (tx) => {
-    // 1) Todas las lecturas primero
     const snapEvento = await tx.get(refEvento);
     if (!snapEvento.exists) throw new HttpsError('not-found', 'Este evento ya no está disponible.');
     const e = snapEvento.data() as Record<string, unknown>;
@@ -61,7 +57,6 @@ export const comprarEntradas = onCall({ region: 'us-west1' }, async (peticion) =
       );
     }
 
-    // 2) Escrituras
     const precio = Number(e.precio ?? 0);
     tx.update(refEvento, { vendidas: FieldValue.increment(cantidad) });
 
@@ -76,7 +71,7 @@ export const comprarEntradas = onCall({ region: 'us-west1' }, async (peticion) =
         numero: i + 1,
         precio,
         pago: 'simulado_exitoso',
-        token: randomBytes(18).toString('base64url'), // secreto: va dentro del QR
+        token: randomBytes(18).toString('base64url'),
         usada: false,
         eventoTitulo: e.titulo,
         eventoFechaInicio: e.fechaInicio,

@@ -12,7 +12,6 @@ export const ICONO_CATEGORIA: Record<string, Icono> = {
   Otros: 'ellipsis-horizontal-circle-outline',
 };
 
-// Colores de la etiqueta de categoría (fondo, texto)
 const COLOR_CATEGORIA: Record<string, [string, string]> = {
   Música: ['#EFE8FB', '#5E1F9C'],
   Gastronomía: ['#FDE8D4', '#C2570C'],

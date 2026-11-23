@@ -1,5 +1,4 @@
-import { Alert } from 'react-native';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
-// Marcador de botones cuya función se construye en una etapa posterior
 export const avisarProximamente = (funcion: string) =>
-  Alert.alert('Próximamente', `${funcion} estará disponible en una próxima etapa.`);
+  mostrarAviso({ titulo: 'Próximamente', mensaje: `${funcion} estará disponible en una próxima etapa.`, tipo: 'info' });

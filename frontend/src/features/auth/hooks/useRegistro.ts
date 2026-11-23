@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Alert } from 'react-native';
+import { useRef, useState } from 'react';
 import { sanitizarTexto } from '@/compartido/utilidades/sanitizar';
 import { CIUDADES_BAJA_CALIFORNIA } from '../constantes';
 import { RolRegistrable } from '../tipos';
 import { registrarCuenta } from '../servicios/servicioAuth';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import { codigoDeError, mensajeDeError } from '../utilidades/errores';
 import {
   fechaAIso,
@@ -61,7 +61,6 @@ const validar = (campo: CampoValidable, v: ValoresRegistro): string => {
   }
 };
 
-// Lógica de la pantalla de registro (2 pasos), sin nada de diseño
 export function useRegistro() {
   const [paso, establecerPaso] = useState<1 | 2>(1);
   const [valores, establecerValores] = useState<ValoresRegistro>(VALORES_INICIALES);
@@ -72,6 +71,7 @@ export function useRegistro() {
     visible: false,
     correoEnviado: true,
   });
+  const registrandoRef = useRef(false);
 
   const cambiar = (campo: keyof ValoresRegistro, texto: string) => {
     const valor = campo === 'fechaNacimiento' ? formatearFecha(texto) : texto;
@@ -97,7 +97,12 @@ export function useRegistro() {
   const volverAlPaso1 = () => establecerPaso(1);
 
   const registrar = async () => {
-    if (!validarCampos(CAMPOS_PASO_2)) return;
+    if (cargando || registrandoRef.current) return;
+    registrandoRef.current = true;
+    if (!validarCampos(CAMPOS_PASO_2)) {
+      registrandoRef.current = false;
+      return;
+    }
 
     establecerCargando(true);
     try {
@@ -121,10 +126,11 @@ export function useRegistro() {
       } else if (codigo === 'auth/email-already-in-use') {
         establecerErrores((p) => ({ ...p, correo: mensajeDeError(error) }));
       } else {
-        Alert.alert('No se pudo crear la cuenta', mensajeDeError(error));
+        mostrarAviso({ titulo: 'No se pudo crear la cuenta', mensaje: mensajeDeError(error), tipo: 'error' });
       }
     } finally {
       establecerCargando(false);
+      registrandoRef.current = false;
     }
   };
 

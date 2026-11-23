@@ -11,12 +11,11 @@ export interface EventoModerable {
   fechaInicio: Date | null;
   imagenUrl: string;
   vendidas: number;
-  motivo: string; // motivo de la suspensión
+  motivo: string;
 }
 
 const fecha = (v: unknown) => (v instanceof Timestamp ? v.toDate() : null);
 
-// Eventos que están (o estuvieron) publicados: aprobados y suspendidos
 export function escucharEventosModerables(alCambiar: (l: EventoModerable[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'eventos'), where('estado', 'in', ['aprobado', 'suspendido'])),
@@ -74,7 +73,6 @@ export async function reactivarEvento(e: EventoModerable): Promise<void> {
   });
 }
 
-// ---------- Organizadores y suspensión de cuenta ----------
 export interface OrganizadorModeracion {
   uid: string;
   nombre: string;
@@ -103,7 +101,6 @@ export function escucharOrganizadores(alCambiar: (l: OrganizadorModeracion[]) =>
   );
 }
 
-// Suspensión temporal: mientras dure no puede crear ni editar eventos (lo exigen las reglas)
 export async function suspenderCuenta(adminUid: string, uid: string, dias: number, motivo: string): Promise<void> {
   await updateDoc(doc(db, 'usuarios', uid), {
     suspensionHasta: Timestamp.fromDate(new Date(Date.now() + dias * 24 * 60 * 60 * 1000)),

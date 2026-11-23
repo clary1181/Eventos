@@ -1,7 +1,3 @@
-/* Crea un administrador en los EMULADORES (no toca producción).
- * Uso (desde backend/functions, con los emuladores corriendo):
- *   node scripts/crear-admin.cjs correo@ejemplo.com ContraseñaSegura123 "Nombre" "Apellidos" nombreusuario
- */
 const fs = require('fs');
 const path = require('path');
 
@@ -14,13 +10,12 @@ if (!correo || !contrasena || contrasena.length < 8) {
   process.exit(1);
 }
 
-// El proyecto sale de .firebaserc (o de GCLOUD_PROJECT)
 let projectId = process.env.GCLOUD_PROJECT;
 if (!projectId) {
   try {
     const rc = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', '.firebaserc'), 'utf8'));
     projectId = rc.projects && rc.projects.default;
-  } catch { /* se avisa abajo */ }
+  } catch {  }
 }
 if (!projectId) { console.error('No encontré el proyecto: define GCLOUD_PROJECT=<id>.'); process.exit(1); }
 

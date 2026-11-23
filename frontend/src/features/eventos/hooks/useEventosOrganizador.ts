@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { escucharEventosDeOrganizador } from '../servicios/servicioEventos';
 import type { Evento } from '../tipos';
 
-// Eventos del organizador en tiempo real
 export function useEventosOrganizador(uid: string | undefined) {
   const [eventos, establecerEventos] = useState<Evento[]>([]);
   const [cargando, establecerCargando] = useState(true);

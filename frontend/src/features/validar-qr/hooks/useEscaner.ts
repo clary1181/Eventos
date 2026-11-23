@@ -3,7 +3,6 @@ import { Vibration } from 'react-native';
 import { validarEntradaQR } from '../servicios/servicioValidacion';
 import type { ResultadoValidacion } from '../tipos';
 
-// Procesa un QR a la vez: mientras se muestra un resultado, los demás códigos se ignoran
 export function useEscaner(eventoId: string, uid: string) {
   const ocupado = useRef(false);
   const [procesando, setProcesando] = useState(false);
@@ -26,7 +25,7 @@ export function useEscaner(eventoId: string, uid: string) {
 
   const siguiente = useCallback(() => {
     setResultado(null);
-    setTimeout(() => { ocupado.current = false; }, 400); // evita releer el mismo QR de inmediato
+    setTimeout(() => { ocupado.current = false; }, 400);
   }, []);
 
   return { procesando, resultado, aceptadas, alEscanear, siguiente };

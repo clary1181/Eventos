@@ -8,10 +8,9 @@ export interface EventoHistorial {
   lugar: string;
   fecha: Date;
   entradas: number;
-  asistio: boolean; // alguna de sus entradas se validó con QR
+  asistio: boolean;
 }
 
-// Eventos pasados de los que el asistente compró entradas (una fila por evento)
 export function useHistorialEventos(uid: string | undefined) {
   const e = useMisEntradas(uid);
   const eventos = useMemo(() => {

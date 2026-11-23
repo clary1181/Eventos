@@ -4,7 +4,6 @@ import Svg, { G, Line, Path } from 'react-native-svg';
 const ANCHO_VB = 230;
 const ALTO_VB = 140;
 
-// Estrella de 5 puntas centrada en (cx, cy)
 const estrella = (cx: number, cy: number, radioExt: number, radioInt: number) =>
   Array.from({ length: 10 }, (_, i) => {
     const ang = (-90 + i * 36) * (Math.PI / 180);
@@ -12,7 +11,6 @@ const estrella = (cx: number, cy: number, radioExt: number, radioInt: number) =>
     return `${i === 0 ? 'M' : 'L'}${(cx + r * Math.cos(ang)).toFixed(2)} ${(cy + r * Math.sin(ang)).toFixed(2)}`;
   }).join(' ') + ' Z';
 
-// Boleto inclinado con estrella, línea punteada en ambos lados y destellos
 export function IconoTicket({ ancho = 120, color = '#FFFFFF' }: { ancho?: number; color?: string }) {
   const alto = (ancho * ALTO_VB) / ANCHO_VB;
 

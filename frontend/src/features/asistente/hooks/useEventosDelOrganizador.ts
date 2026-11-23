@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { escucharEventosPublicos } from '../servicios/servicioCatalogo';
 import type { EventoPublico } from '../tipos';
 
-// Eventos aprobados de un organizador, separados en próximos y realizados
 export function useEventosDelOrganizador(organizadorId: string | undefined) {
   const [todos, setTodos] = useState<EventoPublico[]>([]);
   const [cargando, setCargando] = useState(true);

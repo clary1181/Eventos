@@ -10,7 +10,6 @@ type Propiedades = {
   onPress: () => void;
 };
 
-// Campo que se ve como CampoTexto pero abre una lista (ciudad, etc.)
 export function CampoSelector({ icono, valor, onPress }: Propiedades) {
   return (
     <View style={estilos.envoltorio}>

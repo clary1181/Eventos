@@ -8,7 +8,6 @@ import { escucharMisEntradas } from '@/features/asistente/servicios/servicioMisE
 import type { EventoPublico } from '@/features/asistente/tipos';
 import { cancelarRecordatorios, prepararNotificaciones, sincronizarRecordatorios } from '../servicios/servicioRecordatorios';
 
-// No dibuja nada: mantiene al día los recordatorios locales de los favoritos y las entradas del asistente
 export function RecordatoriosAsistente() {
   const router = useRouter();
   const { perfil } = useSesion();
@@ -26,7 +25,6 @@ export function RecordatoriosAsistente() {
     return () => { a(); b(); c(); };
   }, [uid]);
 
-  // Reprograma cuando cambian los eventos, los favoritos o las entradas
   useEffect(() => {
     if (!uid) return;
     let activo = true;
@@ -45,7 +43,6 @@ export function RecordatoriosAsistente() {
     return () => { activo = false; };
   }, [uid, eventos, favoritos, conEntrada]);
 
-  // Al tocar un recordatorio se abre el evento
   useEffect(() => {
     const s = Notifications.addNotificationResponseReceivedListener((r) => {
       const id = r.notification.request.content.data?.eventoId;
@@ -54,7 +51,6 @@ export function RecordatoriosAsistente() {
     return () => s.remove();
   }, [router]);
 
-  // Al cerrar sesión se quitan, para que no suenen en el teléfono de otra persona
   useEffect(() => () => { void cancelarRecordatorios().catch(() => {}); }, []);
 
   return null;

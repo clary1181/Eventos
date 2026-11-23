@@ -8,7 +8,7 @@ export interface DatosFormularioEvento {
   direccion: string;
   precio: string;
   capacidad: string;
-  fotoUri: string | null; // ruta local si se eligió una foto nueva; URL remota si es la que ya tenía
+  fotoUri: string | null;
 }
 
 export const FORMULARIO_VACIO: DatosFormularioEvento = {
@@ -16,7 +16,6 @@ export const FORMULARIO_VACIO: DatosFormularioEvento = {
   lugar: '', direccion: '', precio: '', capacidad: '', fotoUri: null,
 };
 
-// Evento tal como se carga para corregirlo
 export interface EventoEditable {
   id: string;
   estado: string;
@@ -34,7 +33,6 @@ export interface EventoEditable {
   imagenUrl: string;
 }
 
-// Las reglas solo dejan al organizador editar directamente eventos que aún no son públicos
 export const ESTADOS_EDITABLES = ['pendiente_aprobacion', 'requiere_correccion'];
 
 export const desdeEvento = (e: EventoEditable): DatosFormularioEvento => ({

@@ -6,7 +6,6 @@ export const TITULO_MOTIVO: Record<string, string> = {
   otro: 'Otro',
 };
 
-// Reporte ya revisado por un administrador (colección "reportesOrganizador"); no incluye quién reportó
 export interface ReporteOrganizador {
   id: string;
   eventoId: string;

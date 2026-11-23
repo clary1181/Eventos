@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { cambiarContrasenia } from '@/features/auth/servicios/servicioAuth';
 
 const MENSAJES: Record<string, string> = {
@@ -15,8 +15,10 @@ export const LONGITUD_MINIMA = 8;
 export function useCambiarContrasenia() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const guardandoRef = useRef(false);
 
   const cambiar = useCallback(async (actual: string, nueva: string, confirmacion: string): Promise<boolean> => {
+    if (guardandoRef.current) return false;
     setError(null);
     let problema: string | null = null;
     if (!actual) problema = 'Escribe tu contraseña actual.';
@@ -28,6 +30,7 @@ export function useCambiarContrasenia() {
       return false;
     }
 
+    guardandoRef.current = true;
     setGuardando(true);
     try {
       await cambiarContrasenia(actual, nueva);
@@ -38,6 +41,7 @@ export function useCambiarContrasenia() {
       return false;
     } finally {
       setGuardando(false);
+      guardandoRef.current = false;
     }
   }, []);
 

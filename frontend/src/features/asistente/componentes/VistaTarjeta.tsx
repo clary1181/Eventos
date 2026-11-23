@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { marcaTarjeta, type DatosTarjeta } from '../utilidades/tarjeta';
 
-// Vista previa de la tarjeta que se va llenando mientras la persona escribe
 export function VistaTarjeta({ datos }: { datos: DatosTarjeta }) {
   const digitos = datos.numero.replace(/\D/g, '').padEnd(16, '•');
   const numero = digitos.replace(/(.{4})(?=.)/g, '$1 ');

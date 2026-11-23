@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert } from 'react-native';
+import { useRef, useState } from 'react';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import { sanitizarTexto } from '@/compartido/utilidades/sanitizar';
 import { CIUDADES_BAJA_CALIFORNIA } from '../constantes';
 import type { RolRegistrable } from '../tipos';
@@ -39,13 +39,12 @@ const validar = (campo: CampoValidable, v: Valores): string => {
   }
 };
 
-// Lógica de "Completar perfil" para quien entró con Google por primera vez
 export function useCompletarPerfilGoogle() {
   const { usuario, recargar } = useSesion();
   const correo = usuario?.email ?? '';
 
   const [valores, establecerValores] = useState<Valores>(() => {
-    // Sugerencias tomadas de la cuenta de Google (la persona puede cambiarlas)
+
     const primerNombre = (usuario?.displayName ?? '').split(' ')[0] ?? '';
     const usuarioSugerido = correo.split('@')[0].replace(/[^a-zA-Z0-9_.]/g, '').slice(0, 20);
     return {
@@ -61,6 +60,7 @@ export function useCompletarPerfilGoogle() {
   const [errores, establecerErrores] = useState<Errores>({});
   const [cargando, establecerCargando] = useState(false);
   const [ciudadesVisible, establecerCiudadesVisible] = useState(false);
+  const enviandoRef = useRef(false);
 
   const cambiar = (campo: keyof Valores, texto: string) => {
     const valor = campo === 'fechaNacimiento' ? formatearFecha(texto) : texto;
@@ -71,10 +71,15 @@ export function useCompletarPerfilGoogle() {
   };
 
   const enviar = async () => {
+    if (cargando || enviandoRef.current) return;
+    enviandoRef.current = true;
     const nuevos: Errores = {};
     CAMPOS.forEach((campo) => { nuevos[campo] = validar(campo, valores); });
     establecerErrores(nuevos);
-    if (CAMPOS.some((campo) => nuevos[campo])) return;
+    if (CAMPOS.some((campo) => nuevos[campo])) {
+      enviandoRef.current = false;
+      return;
+    }
 
     establecerCargando(true);
     try {
@@ -86,21 +91,27 @@ export function useCompletarPerfilGoogle() {
         nombreUsuario: valores.nombreUsuario.trim(),
         rol: valores.rol,
       });
-      // Vuelve a leer el perfil: la ruta (auth) redirige sola a la pantalla del rol
+
       await recargar();
     } catch (error) {
       if (codigoDeError(error) === 'usuarios/nombre-en-uso') {
         establecerErrores((p) => ({ ...p, nombreUsuario: mensajeDeError(error) }));
       } else {
-        Alert.alert('No se pudo guardar tu perfil', mensajeDeError(error));
+        mostrarAviso({ titulo: 'No se pudo guardar tu perfil', mensaje: mensajeDeError(error), tipo: 'error' });
       }
     } finally {
       establecerCargando(false);
+      enviandoRef.current = false;
     }
   };
 
-  // Cierra la sesión: la ruta (auth) te regresa a iniciar sesión
-  const cancelar = () => cerrarSesion();
+  const cancelar = () => {
+    void cerrarSesion().catch(() => mostrarAviso({
+      titulo: 'No se pudo cerrar la sesión',
+      mensaje: 'Revisa tu conexión e inténtalo de nuevo.',
+      tipo: 'error',
+    }));
+  };
 
   return {
     correo,

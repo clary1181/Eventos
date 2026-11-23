@@ -12,7 +12,6 @@ type Opcion = {
 
 type Propiedades = { opciones: Opcion[]; activa: string; alCambiar: (id: string) => void };
 
-// Selector de secciones dentro de una pantalla (Mis eventos / Estadísticas / Reportes)
 export function PestanasSegmentadas({ opciones, activa, alCambiar }: Propiedades) {
   return (
     <View style={estilos.fila}>

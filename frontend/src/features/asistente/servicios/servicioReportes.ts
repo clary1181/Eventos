@@ -46,7 +46,6 @@ export function escucharMisReportes(uid: string, alCambiar: (l: ReporteEnviado[]
   );
 }
 
-// ID {uid}_{eventoId}: un solo reporte por persona y evento (lo exigen las reglas)
 export async function enviarReporte(uid: string, evento: { id: string; organizadorId: string; titulo: string }, motivo: MotivoReporte, descripcion: string): Promise<void> {
   await setDoc(doc(db, 'reportes', `${uid}_${evento.id}`), {
     eventoId: evento.id,

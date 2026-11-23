@@ -11,8 +11,6 @@ export interface EventoPlat {
 export interface EntradaPlat { eventoId: string; organizadorId: string; precio: number; usada: boolean; creadaEn: Date | null }
 export interface ReportePlat { estado: string; creadoEn: Date | null }
 
-// Datos de toda la plataforma. Cada colección es independiente: si una falla (reglas, red) queda en null
-// y solo las tarjetas que dependen de ella muestran "—".
 export interface DatosPlataforma {
   usuarios: UsuarioPlat[] | null;
   eventos: EventoPlat[] | null;

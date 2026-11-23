@@ -5,7 +5,6 @@ import { formatearFechaHora } from '@/features/asistente/utilidades/formato';
 import type { EventoValidable, ResultadoValidacion } from '../tipos';
 import { leerPayloadQR } from '../utilidades/qr';
 
-// Eventos aprobados del organizador cuya ventana de acceso aún no termina. Filtro y orden en la app (sin índices).
 export function escucharEventosValidables(uid: string, alCambiar: (l: EventoValidable[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'eventos'), where('organizadorId', '==', uid)),
@@ -35,7 +34,6 @@ export function escucharEventosValidables(uid: string, alCambiar: (l: EventoVali
 
 class Usada extends Error {}
 
-// Valida el texto leído del QR contra el evento que el organizador atiende y marca la entrada como usada
 export async function validarEntradaQR(texto: string, eventoActivoId: string, organizadorUid: string): Promise<ResultadoValidacion> {
   const datos = leerPayloadQR(texto);
   if (!datos) return { tipo: 'invalida', titulo: 'Entrada no válida', detalle: 'Este código no pertenece a MR-Eventos.' };
@@ -66,7 +64,7 @@ export async function validarEntradaQR(texto: string, eventoActivoId: string, or
       creadaEn: d.creadaEn instanceof Timestamp ? d.creadaEn.toDate() : new Date(0),
     };
   } catch {
-    // Las reglas no dejan leer entradas ajenas ni inexistentes
+
     return { tipo: 'invalida', titulo: 'No se pudo leer la entrada', detalle: 'La entrada no existe o no es de uno de tus eventos.' };
   }
 
@@ -80,12 +78,11 @@ export async function validarEntradaQR(texto: string, eventoActivoId: string, or
     };
   }
 
-  // Manda la fecha vigente del evento (pudo cambiar después de la venta)
   let inicio = entrada.eventoFechaInicio;
   try {
     const ev = (await getDoc(doc(db, 'eventos', eventoActivoId))).data();
     if (ev?.fechaInicio instanceof Timestamp) inicio = ev.fechaInicio.toDate();
-  } catch { /* se usa la fecha guardada en la entrada */ }
+  } catch {  }
 
   const ventana = ventanaQR(inicio);
   const ahora = Date.now();

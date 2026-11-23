@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colores } from '@/compartido/tema';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import { formatearFecha } from '../../verificaciones/componentes/TarjetaSolicitud';
 import { ETIQUETA_ESTADO_EVENTO, PESTANAS_EVENTOS, type EventoAdmin } from '../tipos';
 
@@ -30,6 +32,7 @@ const Cambio = ({ etiqueta, antes, despues }: { etiqueta: string; antes: string;
 );
 
 export function ModalRevisionEvento({ evento: e, procesando, alCerrar, alDictaminar, alResolverCambios }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const [texto, setTexto] = useState('');
   useEffect(() => setTexto(''), [e?.id]);
 
@@ -37,22 +40,31 @@ export function ModalRevisionEvento({ evento: e, procesando, alCerrar, alDictami
   const p = e?.propuesta ?? null;
   const color = PESTANAS_EVENTOS.find((p) => p.estado === e?.estado)?.color ?? Colores.primario;
   const confirmarAprobar = () =>
-    Alert.alert('Aprobar evento', 'Será visible para todos los asistentes.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Aprobar', onPress: () => alDictaminar('aprobado', '') },
-    ]);
+    mostrarAviso({
+      titulo: 'Aprobar evento',
+      mensaje: 'Será visible para todos los asistentes.',
+      tipo: 'info',
+      textoCancelar: 'Cancelar',
+      textoConfirmar: 'Aprobar',
+      alConfirmar: () => alDictaminar('aprobado', ''),
+    });
 
   return (
     <Modal visible={e !== null} animationType="slide" transparent onRequestClose={alCerrar}>
-      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={estilos.hoja}>
+      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={[estilos.hoja, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
           {e && (
             <>
               <View style={estilos.cabecera}>
                 <Text style={estilos.titulo} numberOfLines={2}>{e.titulo}</Text>
                 <View style={[estilos.insignia, { backgroundColor: color }]}><Text style={estilos.textoInsignia}>{ETIQUETA_ESTADO_EVENTO[e.estado]}</Text></View>
               </View>
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <ScrollView
+                style={{ flexShrink: 1 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 16 }}
+              >
                 <Image source={{ uri: e.imagenUrl }} style={estilos.imagen} resizeMode="cover" />
                 <Dato etiqueta="Organizador" valor={e.organizadorNombre} />
                 <Dato etiqueta="Categoría" valor={e.categoria} />
@@ -133,10 +145,14 @@ export function ModalRevisionEvento({ evento: e, procesando, alCerrar, alDictami
                     <Pressable
                       style={[estilos.boton, { backgroundColor: '#1B7F3B' }]}
                       onPress={() =>
-                        Alert.alert('Aprobar cambios', 'Se aplicarán al evento publicado. Las entradas ya vendidas conservan la fecha que tenían guardada.', [
-                          { text: 'Cancelar', style: 'cancel' },
-                          { text: 'Aprobar', onPress: () => alResolverCambios('aprobar', '') },
-                        ])
+                        mostrarAviso({
+                          titulo: 'Aprobar cambios',
+                          mensaje: 'Se aplicarán al evento publicado. Las entradas ya vendidas conservan la fecha que tenían guardada.',
+                          tipo: 'info',
+                          textoCancelar: 'Cancelar',
+                          textoConfirmar: 'Aprobar',
+                          alConfirmar: () => alResolverCambios('aprobar', ''),
+                        })
                       }
                       disabled={procesando}
                     >

@@ -16,27 +16,19 @@ import { Entorno } from '@/config/entorno';
 import { DatosRegistro } from '../tipos';
 import { codigoDeError, errorConCodigo } from '../utilidades/errores';
 import { crearPerfilCompleto, nombreUsuarioDisponible } from './servicioUsuarios';
+import { quitarTokenPush } from '@/features/notificaciones/servicios/servicioPush';
 
-// Los correos de Firebase (verificación y recuperación) salen en español
 auth.languageCode = 'es';
 
-// Web client ID de Google (el de tipo 3 en google-services.json). Es público, no es un secreto.
-// Debe ser del MISMO proyecto de Firebase que usa la app.
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
 
-// Mientras se registra, la sesión recién creada no debe tratarse como "sesión iniciada"
 let registrando = false;
 export const estaRegistrando = (): boolean => registrando;
 
-// ---------- Carga perezosa de Google Sign-In ----------
-// El módulo es nativo: en Expo Go (o en un build sin el plugin) no existe y, si se importara
-// al inicio del archivo, la app se caería al arrancar. Aquí se carga solo al usarlo
-// y, si falta, se lanza un error controlado.
 type ModuloGoogle = typeof import('@react-native-google-signin/google-signin');
 
 let moduloGoogle: ModuloGoogle | null = null;
 
-// ¿Está el módulo nativo dentro de este binario? (false en Expo Go)
 const googleDisponible = (): boolean => {
   try {
     return !!TurboModuleRegistry.get('RNGoogleSignin') || !!NativeModules.RNGoogleSignin;
@@ -64,10 +56,6 @@ const obtenerGoogle = (): ModuloGoogle => {
   }
 };
 
-// ---------- Correo y contraseña ----------
-
-// Crea la cuenta, guarda el perfil y envía el correo de verificación.
-// Al terminar cierra la sesión: la persona debe verificar su correo antes de entrar.
 export const registrarCuenta = async (
   datos: DatosRegistro,
   contrasenia: string
@@ -83,7 +71,7 @@ export const registrarCuenta = async (
       }
       await crearPerfilCompleto(user.uid, correo, datos);
     } catch (error) {
-      // No dejar una cuenta de Auth sin perfil
+
       await user.delete().catch(() => undefined);
       throw error;
     }
@@ -92,7 +80,7 @@ export const registrarCuenta = async (
     try {
       await sendEmailVerification(user);
     } catch {
-      correoEnviado = false; // desde el login se puede pedir el reenvío
+      correoEnviado = false;
     }
 
     await signOut(auth);
@@ -102,8 +90,6 @@ export const registrarCuenta = async (
   }
 };
 
-// Inicia sesión. Si el correo no está verificado, cierra la sesión y lanza 'auth/correo-no-verificado'.
-// El perfil y la redirección los resuelve SesionProvider al detectar la sesión.
 export const iniciarSesion = async (correo: string, contrasenia: string): Promise<void> => {
   const { user } = await signInWithEmailAndPassword(auth, correo.trim().toLowerCase(), contrasenia);
   await user.reload();
@@ -113,7 +99,6 @@ export const iniciarSesion = async (correo: string, contrasenia: string): Promis
   }
 };
 
-// Reenvía el correo de verificación (inicia sesión un momento para poder enviarlo)
 export const reenviarCorreoVerificacion = async (correo: string, contrasenia: string): Promise<void> => {
   const { user } = await signInWithEmailAndPassword(auth, correo.trim().toLowerCase(), contrasenia);
   try {
@@ -123,8 +108,6 @@ export const reenviarCorreoVerificacion = async (correo: string, contrasenia: st
   }
 };
 
-// Envía el enlace para crear una nueva contraseña. Si el correo no existe no lanza error,
-// así no se revela qué cuentas están registradas.
 export const recuperarContrasenia = async (correo: string): Promise<void> => {
   try {
     await sendPasswordResetEmail(auth, correo.trim().toLowerCase());
@@ -134,12 +117,6 @@ export const recuperarContrasenia = async (correo: string): Promise<void> => {
   }
 };
 
-// ---------- Google ----------
-
-// Abre el selector de cuentas de Google e inicia sesión en Firebase.
-// No decide a dónde ir: SesionProvider detecta la sesión y
-//  - si la cuenta ya tiene perfil, la ruta (auth) redirige a la pantalla del rol;
-//  - si no lo tiene, la ruta (auth) lleva a "Completar perfil".
 export const iniciarSesionConGoogle = async (): Promise<'completado' | 'cancelado'> => {
   const { GoogleSignin, isSuccessResponse, statusCodes } = obtenerGoogle();
 
@@ -152,7 +129,7 @@ export const iniciarSesionConGoogle = async (): Promise<'completado' | 'cancelad
     if (!idToken) throw errorConCodigo('Google no devolvió credenciales.', 'google/sin-token');
 
     const { user } = await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
-    await user.getIdToken(true); // el token trae email_verified (lo usan las reglas)
+    await user.getIdToken(true);
     return 'completado';
   } catch (error) {
     if (codigoDeError(error) === statusCodes.SIGN_IN_CANCELLED) return 'cancelado';
@@ -160,8 +137,6 @@ export const iniciarSesionConGoogle = async (): Promise<'completado' | 'cancelad
   }
 };
 
-// Crea el perfil de quien entró con Google (la sesión de Auth ya está abierta).
-// El correo sale de la cuenta de Google: las reglas exigen que coincida con el del token.
 export const completarPerfilGoogle = async (datos: Omit<DatosRegistro, 'correo'>): Promise<void> => {
   const usuario = auth.currentUser;
   if (!usuario || !usuario.email) {
@@ -173,26 +148,27 @@ export const completarPerfilGoogle = async (datos: Omit<DatosRegistro, 'correo'>
   await crearPerfilCompleto(usuario.uid, usuario.email, { ...datos, correo: usuario.email });
 };
 
-// ---------- Sesión ----------
-
 export const cerrarSesion = async (): Promise<void> => {
-  // Cierra también la sesión de Google para que la próxima vez deje elegir cuenta.
-  // Si el módulo nativo no existe (Expo Go), no hay sesión de Google que cerrar.
+  const uid = auth.currentUser?.uid;
+  if (uid) await quitarTokenPush(uid);
+
   if (googleDisponible() && WEB_CLIENT_ID) {
     try {
       await obtenerGoogle().GoogleSignin.signOut();
     } catch {
-      // ignorado a propósito
+
     }
   }
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (error) {
+    throw errorConCodigo('No se pudo cerrar la sesión. Revisa tu conexión e inténtalo de nuevo.', 'auth/cerrar-sesion');
+  }
 };
 
-// Las cuentas que entren solo con Google no tienen contraseña que cambiar
 export const usaContrasenia = (): boolean =>
   !!auth.currentUser?.providerData.some((p) => p.providerId === 'password');
 
-// Firebase exige una sesión reciente para cambiar la contraseña: se reautentica con la actual
 export const cambiarContrasenia = async (actual: string, nueva: string): Promise<void> => {
   const usuario = auth.currentUser;
   if (!usuario || !usuario.email) {

@@ -18,7 +18,6 @@ type Propiedades = {
   disposicion?: 'vertical' | 'horizontal';
 };
 
-// Cifra destacada con su icono. "vertical" = icono arriba (Inicio); "horizontal" = icono al lado (Perfil)
 export function TarjetaMetrica({ icono, valor, etiqueta, tono = 'morado', disposicion = 'vertical' }: Propiedades) {
   const horizontal = disposicion === 'horizontal';
   return (

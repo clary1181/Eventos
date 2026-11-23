@@ -3,9 +3,9 @@ import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Propiedades {
-  valor: number; // 0 a 5 (admite decimales al mostrar)
+  valor: number;
   tamano?: number;
-  alCambiar?: (n: number) => void; // si existe, las estrellas se pueden tocar
+  alCambiar?: (n: number) => void;
 }
 
 export function Estrellas({ valor, tamano = 20, alCambiar }: Propiedades) {

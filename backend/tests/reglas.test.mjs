@@ -15,7 +15,6 @@ const enDias = (n) => Timestamp.fromDate(new Date(Date.now() + n * DIA));
 const como = (uid, token = {}) => testEnv.authenticatedContext(uid, token).firestore();
 const anonimo = () => testEnv.unauthenticatedContext().firestore();
 
-// ---------- Datos de apoyo ----------
 function usuario(nombreUsuario, nombre, apellidos, rol, estadoVerificacion = 'sin_solicitud') {
   return {
     nombreUsuario, nombre, apellidos, rol, ciudad: 'Ensenada',
@@ -51,8 +50,8 @@ async function sembrar() {
     await setDoc(doc(db, 'usuarios', 'asist1', 'privado', 'perfil'), { correo: 'a1@test.com', telefono: '6461111111' });
     await setDoc(doc(db, 'usuarios', 'asist2', 'privado', 'perfil'), { correo: 'a2@test.com', telefono: '6462222222' });
 
-    await setDoc(doc(db, 'eventos', 'e1'), eventoBase());                                  // aprobado, sin ventas
-    await setDoc(doc(db, 'eventos', 'e2'), eventoBase({ titulo: 'Con ventas', vendidas: 3 })); // aprobado, con ventas
+    await setDoc(doc(db, 'eventos', 'e1'), eventoBase());
+    await setDoc(doc(db, 'eventos', 'e2'), eventoBase({ titulo: 'Con ventas', vendidas: 3 }));
     await setDoc(doc(db, 'eventos', 'e3'), eventoBase({ titulo: 'Pendiente', estado: 'pendiente_aprobacion' }));
 
     await setDoc(doc(db, 'entradas', 'ent1'), {
@@ -73,7 +72,6 @@ async function sembrar() {
   });
 }
 
-// ---------- Configuración ----------
 before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: 'demo-eventos',
@@ -83,7 +81,6 @@ before(async () => {
 after(async () => { await testEnv.cleanup(); });
 beforeEach(async () => { await testEnv.clearFirestore(); await sembrar(); });
 
-// ---------- usuarios ----------
 describe('usuarios', () => {
   function registro(uid, rol) {
     const db = como(uid, { email: `${uid}@test.com` });
@@ -123,7 +120,6 @@ describe('usuarios', () => {
     assertSucceeds(getDoc(doc(como('admin1'), 'usuarios', 'asist1', 'privado', 'perfil'))));
 });
 
-// ---------- eventos ----------
 describe('eventos', () => {
   const nuevoEvento = (extra = {}) => eventoBase({
     estado: 'pendiente_aprobacion', creadoEn: serverTimestamp(), actualizadoEn: serverTimestamp(), ...extra,
@@ -200,7 +196,6 @@ describe('eventos', () => {
     assertFails(deleteDoc(doc(como('admin1'), 'eventos', 'e1'))));
 });
 
-// ---------- entradas ----------
 describe('entradas', () => {
   it('el asistente dueño lee su entrada', () =>
     assertSucceeds(getDoc(doc(como('asist1'), 'entradas', 'ent1'))));
@@ -218,7 +213,6 @@ describe('entradas', () => {
     assertFails(deleteDoc(doc(como('asist1'), 'entradas', 'ent1'))));
 });
 
-// ---------- solicitudes de verificación ----------
 describe('solicitudesVerificacion', () => {
   const solicitudNueva = (uid) => ({
     organizadorId: uid, estado: 'pendiente', telefono: '6461234567',
@@ -254,7 +248,6 @@ describe('solicitudesVerificacion', () => {
     })));
 });
 
-// ---------- favoritos, reportes, notificaciones, calificaciones ----------
 describe('favoritos', () => {
   it('un asistente guarda un favorito propio', () =>
     assertSucceeds(setDoc(doc(como('asist1'), 'favoritos', 'asist1_e1'), {
@@ -299,6 +292,18 @@ describe('reportes', () => {
 });
 
 describe('notificaciones', () => {
+  it('un organizador avisa a los administradores sobre una verificación nueva', () =>
+    assertSucceeds(setDoc(doc(como('orgOk'), 'notificaciones', 'verificacion-orgok'), {
+      destinatarioId: 'administradores',
+      origenId: 'orgOk',
+      tipo: 'verificacion_nueva',
+      titulo: 'Nueva solicitud de verificación',
+      mensaje: 'Un organizador envió una nueva solicitud.',
+      ruta: '/administrador/organizadores',
+      leida: false,
+      creadaEn: serverTimestamp(),
+    })));
+
   it('el destinatario lee y marca como leída', async () => {
     await assertSucceeds(getDoc(doc(como('asist1'), 'notificaciones', 'n1')));
     await assertSucceeds(updateDoc(doc(como('asist1'), 'notificaciones', 'n1'), { leida: true }));

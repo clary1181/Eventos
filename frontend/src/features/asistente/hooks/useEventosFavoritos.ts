@@ -3,7 +3,6 @@ import { escucharEventosPublicos } from '../servicios/servicioCatalogo';
 import type { EventoPublico } from '../tipos';
 import { useFavoritos } from './useFavoritos';
 
-// Eventos aprobados que el asistente marcó con el corazón
 export function useEventosFavoritos(uid: string | undefined) {
   const { ids, alternar } = useFavoritos(uid);
   const [eventos, setEventos] = useState<EventoPublico[]>([]);

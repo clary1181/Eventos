@@ -7,7 +7,7 @@ export interface DocumentoAdmin {
 }
 
 export interface SolicitudAdmin {
-  id: string; // = uid del organizador
+  id: string;
   estado: EstadoSolicitud;
   telefono: string;
   redes: string[];

@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colores, Espaciado, Fuentes, Radios, Tipografia } from '@/compartido/tema';
 import { LONGITUD_MINIMA, useCambiarContrasenia } from '../hooks/useCambiarContrasenia';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
 interface Propiedades { visible: boolean; alCerrar: () => void }
 
 export function ModalCambiarContrasenia({ visible, alCerrar }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const { guardando, error, cambiar, limpiarError } = useCambiarContrasenia();
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
   const [ver, setVer] = useState(false);
 
-  // Los campos no se conservan entre aperturas
   useEffect(() => {
     if (visible) { setActual(''); setNueva(''); setConfirmacion(''); setVer(false); limpiarError(); }
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -21,7 +23,7 @@ export function ModalCambiarContrasenia({ visible, alCerrar }: Propiedades) {
   const guardar = async () => {
     if (await cambiar(actual, nueva, confirmacion)) {
       alCerrar();
-      Alert.alert('Contraseña actualizada', 'Ya puedes usar tu nueva contraseña.');
+      mostrarAviso({ titulo: 'Contraseña actualizada', mensaje: 'Ya puedes usar tu nueva contraseña.', tipo: 'exito' });
     }
   };
 
@@ -43,9 +45,9 @@ export function ModalCambiarContrasenia({ visible, alCerrar }: Propiedades) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => !guardando && alCerrar()}>
-      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Pressable style={{ flex: 1 }} onPress={() => !guardando && alCerrar()} />
-        <View style={estilos.hoja}>
+        <View style={[estilos.hoja, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
           <View style={estilos.cabecera}>
             <Text style={estilos.titulo}>Cambiar contraseña</Text>
             <Pressable onPress={alCerrar} disabled={guardando} hitSlop={10} accessibilityLabel="Cerrar">

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colores, Espaciado, Fuentes, Radios, Tipografia } from '@/compartido/tema';
 import { MAX_ITEMS, MAX_TEXTO, MAX_TITULO, type ItemContenido } from '../servicios/servicioContenido';
 
 interface Propiedades {
   visible: boolean;
-  titulo: string;          // título del modal
-  etiquetaTitulo: string;  // "Pregunta", "Sección"...
-  etiquetaTexto: string;   // "Respuesta", "Texto"...
+  titulo: string;
+  etiquetaTitulo: string;
+  etiquetaTexto: string;
   items: ItemContenido[];
   guardando: boolean;
   alCerrar: () => void;
@@ -16,10 +17,10 @@ interface Propiedades {
 }
 
 export function ModalEditarContenido({ visible, titulo, etiquetaTitulo, etiquetaTexto, items, guardando, alCerrar, alGuardar }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const [lista, setLista] = useState<ItemContenido[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Cada vez que se abre, parte de la versión actual
   useEffect(() => {
     if (visible) { setLista(items.map((i) => ({ ...i }))); setError(null); }
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -52,9 +53,9 @@ export function ModalEditarContenido({ visible, titulo, etiquetaTitulo, etiqueta
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => !guardando && alCerrar()}>
-      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Pressable style={{ flex: 1 }} onPress={() => !guardando && alCerrar()} />
-        <View style={estilos.hoja}>
+        <View style={[estilos.hoja, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
           <View style={estilos.cabecera}>
             <Text style={estilos.titulo}>{titulo}</Text>
             <Pressable onPress={alCerrar} disabled={guardando} hitSlop={10} accessibilityLabel="Cerrar">

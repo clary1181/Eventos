@@ -1,7 +1,6 @@
 import { CATEGORIAS_EVENTO } from '../categorias';
 import type { DatosFormularioEvento } from '../tipos';
 
-// Quita < > y caracteres de control; conserva los saltos de línea de la descripción
 export const limpiarTexto = (t: string, conSaltos = false): string => {
   const base = t.replace(/[<>]/g, '').replace(conSaltos ? /[\u0000-\u0009\u000B-\u001F\u007F]/g : /[\u0000-\u001F\u007F]/g, ' ');
   return (conSaltos ? base.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n') : base.replace(/\s+/g, ' ')).trim();
@@ -12,11 +11,10 @@ export const aNumeroPrecio = (t: string) => Number(t.trim().replace(',', '.'));
 const MARGEN_INICIO_MS = 2 * 60 * 1000;
 
 interface Opciones {
-  inicioSinCambios?: boolean; // al editar: si el inicio no cambió, no se exige que sea futuro (las reglas tampoco)
-  vendidas?: number;          // al editar: la capacidad no puede bajar de lo ya vendido
+  inicioSinCambios?: boolean;
+  vendidas?: number;
 }
 
-// Mismos límites que las reglas de Firestore (eventoValido). Devuelve el primer error o null.
 export function validarEvento(d: DatosFormularioEvento, opciones: Opciones = {}): string | null {
   const titulo = limpiarTexto(d.titulo);
   if (titulo.length < 3 || titulo.length > 100) return 'El título debe tener entre 3 y 100 caracteres.';

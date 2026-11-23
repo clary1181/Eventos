@@ -6,7 +6,7 @@ export const estilos = StyleSheet.create({
   heroContenido: { paddingHorizontal: 20 },
   saludo: { color: '#FFFFFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 14 },
   subtitulo: { color: 'rgba(255,255,255,0.92)', fontSize: 16, marginTop: 4, maxWidth: '72%', lineHeight: 22 },
-  // El buscador queda a caballo entre la foto y la hoja blanca
+
   buscador: {
     flexDirection: 'row', alignItems: 'center', gap: 10, height: 58, marginHorizontal: 20, marginTop: -29, zIndex: 2,
     backgroundColor: '#FFFFFF', borderRadius: 22, paddingHorizontal: 18,

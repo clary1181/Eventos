@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
@@ -27,10 +28,11 @@ const TITULO: Record<PasoCompra, string> = {
   exito: '¡Compra exitosa!',
 };
 
-function Boton({ texto, alPulsar, tipo = 'primario' }: { texto: string; alPulsar: () => void; tipo?: 'primario' | 'contorno' }) {
+function Boton({ texto, alPulsar, tipo = 'primario', deshabilitado = false }: { texto: string; alPulsar: () => void; tipo?: 'primario' | 'contorno'; deshabilitado?: boolean }) {
   return (
     <Pressable
-      onPress={alPulsar}
+      onPress={deshabilitado ? undefined : alPulsar}
+      disabled={deshabilitado}
       accessibilityRole="button"
       style={({ pressed }) => [estilos.boton, tipo === 'contorno' ? estilos.contorno : estilos.primario, pressed && { opacity: 0.85 }]}
     >
@@ -46,24 +48,23 @@ const Fila = ({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fu
   </View>
 );
 
-// Compra simulada en tres pasos: cantidad → datos de la tarjeta → confirmación. Nada se cobra ni se guarda.
 export function ModalCompra({ visible, evento, maxCompra, alCerrar, alVerEntradas }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const c = useCompra(evento, maxCompra);
   const { paso } = c;
   const ocupado = paso === 'procesando';
   const numeroPaso = paso === 'cantidad' ? 1 : paso === 'pago' ? 2 : 3;
   const totalPasos = c.esGratis ? 2 : 3;
 
-  // Cada vez que se abre, la compra empieza de cero
   useEffect(() => { if (visible) c.reiniciar(); }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cerrar = () => { if (!ocupado) alCerrar(); };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={cerrar}>
-      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Pressable style={estilos.cierreFondo} onPress={cerrar} />
-        <View style={estilos.hoja}>
+        <View style={[estilos.hoja, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
           <View style={estilos.cabecera}>
             <View style={{ flex: 1 }}>
               <Text style={estilos.titulo}>{TITULO[paso]}</Text>

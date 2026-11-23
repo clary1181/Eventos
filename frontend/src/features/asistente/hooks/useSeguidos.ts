@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { alternarSeguido, escucharSeguidos } from '../servicios/servicioSeguidos';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
-// Organizadores que sigue el asistente
 export function useSeguidos(uid: string | undefined) {
   const [lista, setLista] = useState<string[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -20,7 +19,7 @@ export function useSeguidos(uid: string | undefined) {
         await alternarSeguido(uid, organizadorId, ids.has(organizadorId));
       } catch (e) {
         console.error('Error al seguir/dejar de seguir:', e);
-        Alert.alert('No se pudo guardar', 'Revisa tu conexión y que hayas publicado las reglas nuevas.');
+        mostrarAviso({ titulo: 'No se pudo guardar', mensaje: 'Revisa tu conexión y que hayas publicado las reglas nuevas.', tipo: 'error' });
       }
     },
     [uid, ids]

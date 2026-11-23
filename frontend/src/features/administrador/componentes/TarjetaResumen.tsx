@@ -11,7 +11,6 @@ interface Propiedades {
 
 export const formatearConteo = (valor: number | null) => (valor === null ? '—' : valor.toLocaleString('es-MX'));
 
-// Tarjeta de color suave con icono, cifra grande y etiqueta
 export function TarjetaResumen({ icono, valor, etiqueta, fondo }: Propiedades) {
   return (
     <View style={[estilos.tarjeta, { backgroundColor: fondo }]}>

@@ -4,7 +4,6 @@ export interface DatosQR {
   token: string;
 }
 
-// Formato del QR: MREV|idEntrada|idEvento|token. Devuelve null si no es un QR de MR-Eventos.
 export function leerPayloadQR(texto: string): DatosQR | null {
   const partes = texto.trim().split('|');
   if (partes.length !== 4 || partes[0] !== 'MREV') return null;

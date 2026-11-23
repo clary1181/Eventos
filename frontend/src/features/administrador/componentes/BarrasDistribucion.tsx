@@ -6,7 +6,6 @@ import type { ItemDistribucion } from '../utilidades/calculosPlataforma';
 
 interface Propiedades { titulo: string; items: ItemDistribucion[] | null; vacio?: string }
 
-// Tarjeta con una barra por categoría (cada una con su porcentaje sobre el total)
 export function BarrasDistribucion({ titulo, items, vacio = 'Sin datos en este periodo.' }: Propiedades) {
   const total = items ? items.reduce((a, i) => a + i.valor, 0) : 0;
   return (

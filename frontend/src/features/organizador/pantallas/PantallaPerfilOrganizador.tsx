@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,12 +15,12 @@ import { ListaReportesOrganizador, useReportesOrganizador } from '@/features/rep
 import { BannerVerificacion } from '../componentes/BannerVerificacion';
 import { BotonCrearEvento } from '../componentes/BotonCrearEvento';
 import { ListaEventosOrganizador } from '../componentes/ListaEventosOrganizador';
-import { TarjetaMetrica } from '../componentes/TarjetaMetrica';
 import { usePerfilOrganizador } from '../contexto/PerfilOrganizadorContexto';
 import { useAccionCrearEvento } from '../hooks/useAccionCrearEvento';
 import { useResumenOrganizador } from '../hooks/useResumenOrganizador';
 import { estilos } from './PantallaPerfilOrganizador.estilos';
 import { CampanaAvisos } from '@/features/notificaciones';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
 const SECCIONES = [
   { id: 'eventos', titulo: 'Eventos', icono: 'calendar-blank-outline' },
@@ -31,7 +31,7 @@ const SECCIONES = [
 
 type Contacto = { icono: React.ComponentProps<typeof Ionicons>['name']; texto: string; url: string };
 
-const abrir = (url: string) => Linking.openURL(url).catch(() => Alert.alert('No se pudo abrir el enlace'));
+const abrir = (url: string) => Linking.openURL(url).catch(() => mostrarAviso({ titulo: 'No se pudo abrir el enlace', mensaje: 'Revisa que tengas una aplicación compatible.', tipo: 'error' }));
 
 export function PantallaPerfilOrganizador() {
   useBarraEstado('light');
@@ -49,7 +49,7 @@ export function PantallaPerfilOrganizador() {
   const [seccion, establecerSeccion] = useState<string>('eventos');
 
   if (!perfil) return null;
-  // La calificación se calcula con las reseñas visibles (el perfil guardado no se actualiza sin Cloud Functions)
+
   const totalResenas = datos.calificaciones.length;
   const promedio = totalResenas ? datos.calificaciones.reduce((a, c) => a + c.estrellas, 0) / totalResenas : 0;
   const alto = Math.round(width * 0.5) + top;
@@ -134,9 +134,17 @@ export function PantallaPerfilOrganizador() {
         <BannerVerificacion estado={perfil.estadoVerificacion} alPresionar={() => router.push('/organizador/verificacion' as Href)} />
 
         <View style={estilos.metricas}>
-          <TarjetaMetrica disposicion="horizontal" icono="calendar-check-outline" valor={formatearNumero(resumen.publicados)} etiqueta="Eventos publicados" />
-          <TarjetaMetrica disposicion="horizontal" icono="ticket-confirmation-outline" valor={formatearNumero(resumen.entradasVendidas)} etiqueta="Entradas vendidas" />
-          <TarjetaMetrica disposicion="horizontal" icono="star-outline" valor={totalResenas > 0 ? promedio.toFixed(1) : '—'} etiqueta="Calificación promedio" />
+          {[
+            { icono: 'calendar-check-outline', valor: formatearNumero(resumen.publicados), etiqueta: 'Eventos' },
+            { icono: 'ticket-confirmation-outline', valor: formatearNumero(resumen.entradasVendidas), etiqueta: 'Entradas vendidas' },
+            { icono: 'star-outline', valor: totalResenas > 0 ? promedio.toFixed(1) : '—', etiqueta: 'Calificación' },
+          ].map((m) => (
+            <View key={m.etiqueta} style={estilos.metrica}>
+              <MaterialCommunityIcons name={m.icono as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={18} color={Colores.primario} />
+              <Text style={estilos.metricaValor} numberOfLines={1} adjustsFontSizeToFit>{m.valor}</Text>
+              <Text style={estilos.metricaEtiqueta} numberOfLines={2}>{m.etiqueta}</Text>
+            </View>
+          ))}
         </View>
 
         <PestanasIconoArriba opciones={[...SECCIONES]} activa={seccion} alCambiar={establecerSeccion} />

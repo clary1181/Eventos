@@ -5,10 +5,10 @@ import { PerfilPublico } from '../tipos';
 export interface EstadoSesion {
   usuario: User | null;
   perfil: PerfilPublico | null;
-  // Entró con Google pero todavía no tiene perfil: debe completarlo
+
   pendientePerfil: boolean;
   cargando: boolean;
-  // Vuelve a leer el perfil (se usa justo después de crearlo)
+
   recargar: () => Promise<void>;
 }
 

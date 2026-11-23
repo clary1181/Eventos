@@ -11,7 +11,6 @@ interface Propiedades {
   alPulsar: () => void;
 }
 
-// Fila de "Tareas pendientes": franja de color a la izquierda, texto y flecha
 export function FilaTarea({ icono, titulo, descripcion, acento, alPulsar }: Propiedades) {
   return (
     <Pressable

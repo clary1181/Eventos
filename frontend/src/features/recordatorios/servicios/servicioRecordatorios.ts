@@ -13,26 +13,27 @@ export interface EventoRecordable {
   tieneEntrada: boolean;
 }
 
-// Muestra el aviso aunque la app esté abierta
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
 export async function prepararNotificaciones(): Promise<boolean> {
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync(CANAL, { name: 'Recordatorios de eventos', importance: Notifications.AndroidImportance.HIGH });
+  try {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(CANAL, { name: 'Recordatorios de eventos', importance: Notifications.AndroidImportance.HIGH });
+    }
+    const actual = await Notifications.getPermissionsAsync();
+    if (actual.granted) return true;
+    if (!actual.canAskAgain) return false;
+    return (await Notifications.requestPermissionsAsync()).granted;
+  } catch {
+    return false;
   }
-  const actual = await Notifications.getPermissionsAsync();
-  if (actual.granted) return true;
-  if (!actual.canAskAgain) return false;
-  return (await Notifications.requestPermissionsAsync()).granted;
 }
 
 const hora = (d: Date) => d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 const dia = (d: Date) => d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
 
-// Deja programados, en este teléfono, dos recordatorios por evento: 1 día y 2 horas antes.
-// Es idempotente: quita los que ya no aplican (evento cambiado, suspendido o pasado) y agrega los que faltan.
 export async function sincronizarRecordatorios(eventos: EventoRecordable[], ahora = Date.now()): Promise<void> {
   const deseados = new Map<string, { fecha: Date; titulo: string; cuerpo: string; eventoId: string }>();
   eventos.forEach((e) => {

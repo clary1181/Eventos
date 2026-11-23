@@ -1,4 +1,3 @@
-// Conteos del panel; null = no se pudo leer (reglas, red, colección aún inexistente)
 export type Conteo = number | null;
 
 export interface ResumenPlataforma {

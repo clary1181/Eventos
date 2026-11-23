@@ -6,7 +6,6 @@ import type { Metrica, PuntoVenta } from '../tipos';
 
 const ALTO = 130;
 
-// Gráfica de barras de ventas (sin librerías externas); se puede alternar entre entradas e ingresos
 export function GraficaVentas({ puntos, titulo = 'Ventas' }: { puntos: PuntoVenta[]; titulo?: string }) {
   const [metrica, setMetrica] = useState<Metrica>('entradas');
   const valores = puntos.map((p) => (metrica === 'entradas' ? p.entradas : p.ingresos));

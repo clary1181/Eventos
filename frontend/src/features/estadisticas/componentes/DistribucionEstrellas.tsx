@@ -6,7 +6,6 @@ import type { CalificacionResumen } from '../tipos';
 import { distribucionEstrellas } from '../utilidades/calculos';
 import { BarraProgreso } from './BarraProgreso';
 
-// Promedio grande + cuántas reseñas hay de 5 a 1 estrellas
 export function DistribucionEstrellas({ calificaciones }: { calificaciones: CalificacionResumen[] }) {
   const total = calificaciones.length;
   const promedio = total ? calificaciones.reduce((a, c) => a + c.estrellas, 0) / total : 0;

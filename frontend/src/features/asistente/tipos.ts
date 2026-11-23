@@ -1,4 +1,3 @@
-// Evento aprobado tal como lo ve un asistente
 export interface EventoPublico {
   id: string;
   organizadorId: string;
@@ -17,4 +16,4 @@ export interface EventoPublico {
   creadoEn: Date | null;
 }
 
-export const MAX_ENTRADAS_POR_EVENTO = 5; // debe coincidir con el backend (D3)
+export const MAX_ENTRADAS_POR_EVENTO = 5;

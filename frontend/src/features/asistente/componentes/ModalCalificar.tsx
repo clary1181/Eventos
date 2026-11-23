@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colores } from '@/compartido/tema';
 import { CampoPago } from './CampoPago';
@@ -16,6 +17,7 @@ interface Propiedades {
 const TEXTO = ['Toca una estrella', 'Muy malo', 'Malo', 'Regular', 'Bueno', 'Excelente'];
 
 export function ModalCalificar({ visible, eventoTitulo, enviando, alCerrar, alEnviar }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const [estrellas, setEstrellas] = useState(0);
   const [comentario, setComentario] = useState('');
   const [error, setError] = useState('');
@@ -29,9 +31,9 @@ export function ModalCalificar({ visible, eventoTitulo, enviando, alCerrar, alEn
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => !enviando && alCerrar()}>
-      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Pressable style={{ flex: 1 }} onPress={() => !enviando && alCerrar()} />
-        <View style={estilos.hoja}>
+        <View style={[estilos.hoja, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
           <View style={estilos.cabecera}>
             <Text style={estilos.titulo}>Calificar evento</Text>
             <Pressable onPress={alCerrar} disabled={enviando} hitSlop={10} accessibilityLabel="Cerrar">

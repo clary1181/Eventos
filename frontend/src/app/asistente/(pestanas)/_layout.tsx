@@ -3,12 +3,14 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colores } from '@/compartido/tema';
+import type { ColorValue } from 'react-native';
 
 type Icono = React.ComponentProps<typeof Ionicons>['name'];
 
 const icono = (activo: Icono, inactivo: Icono) =>
-  function IconoPestana({ color, focused }: { color: string; focused: boolean }) {
-    return <Ionicons name={focused ? activo : inactivo} size={28} color={color} />;
+  function Pestana({ color, focused }: { color: ColorValue; size: number; focused: boolean }) {
+    const tinte = typeof color === 'string' ? color : Colores.primario;
+    return <Ionicons name={focused ? activo : inactivo} size={28} color={tinte} />;
   };
 
 export default function PestanasAsistente() {

@@ -3,11 +3,11 @@ import type { TipoAviso } from '../tipos';
 
 type Icono = React.ComponentProps<typeof Ionicons>['name'];
 
-// Icono y color por tipo de aviso
 export const PRESENTACION: Record<TipoAviso, { icono: Icono; color: string; fondo: string }> = {
   evento_nuevo: { icono: 'calendar-outline', color: '#5E1F9C', fondo: '#EFE8FB' },
   cambios_pendientes: { icono: 'create-outline', color: '#1D5FA8', fondo: '#E3EEFB' },
   reporte_nuevo: { icono: 'flag-outline', color: '#B4530A', fondo: '#FDE8D4' },
+  verificacion_nueva: { icono: 'shield-checkmark-outline', color: '#5E1F9C', fondo: '#EFE8FB' },
   entradas_compradas: { icono: 'ticket-outline', color: '#1B7F3B', fondo: '#E4F4E7' },
   evento_aprobado: { icono: 'checkmark-circle-outline', color: '#1B7F3B', fondo: '#E4F4E7' },
   evento_rechazado: { icono: 'close-circle-outline', color: '#C62828', fondo: '#FCE4E4' },
@@ -25,7 +25,6 @@ export const PRESENTACION: Record<TipoAviso, { icono: Icono; color: string; fond
   reporte_resuelto: { icono: 'shield-checkmark-outline', color: '#5E1F9C', fondo: '#EFE8FB' },
 };
 
-// "hace 5 min", "hace 3 h", "ayer" o la fecha
 export function tiempoRelativo(d: Date, ahora = Date.now()): string {
   const min = Math.floor((ahora - d.getTime()) / 60000);
   if (min < 1) return 'Ahora';

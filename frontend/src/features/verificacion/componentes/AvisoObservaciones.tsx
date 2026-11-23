@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colores } from '@/compartido/tema';
 import { estilos } from './AvisoObservaciones.estilos';
 
-// Lo que el administrador pidió corregir
 export function AvisoObservaciones({ texto }: { texto: string }) {
   return (
     <View style={estilos.caja}>

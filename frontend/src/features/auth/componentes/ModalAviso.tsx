@@ -14,7 +14,7 @@ interface Props {
   tipo?: TipoAviso;
   textoBoton?: string;
   alCerrar: () => void;
-  // Acción opcional, por ejemplo "Reenviar correo"
+
   textoAccion?: string;
   alAccion?: () => void;
   cargandoAccion?: boolean;
@@ -26,7 +26,6 @@ const ICONOS: Record<TipoAviso, { nombre: 'close-circle' | 'information-circle' 
   exito: { nombre: 'checkmark-circle', color: Colores.exito },
 };
 
-// Minimodal de aviso, con el mismo estilo que el de "Cuenta creada"
 export function ModalAviso({
   visible,
   titulo,

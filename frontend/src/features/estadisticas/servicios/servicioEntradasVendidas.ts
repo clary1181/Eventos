@@ -13,7 +13,6 @@ export interface EntradaVendida {
 
 export interface NombreComprador { nombre: string; usuario: string }
 
-// Las reglas dejan leer las entradas con organizadorId == uid; el filtro por evento es adicional (sin índice compuesto)
 export function escucharEntradasDeEvento(uid: string, eventoId: string, alCambiar: (l: EntradaVendida[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'entradas'), where('organizadorId', '==', uid), where('eventoId', '==', eventoId)),
@@ -28,7 +27,7 @@ export function escucharEntradasDeEvento(uid: string, eventoId: string, alCambia
             precio: Number(x.precio ?? 0),
             usada: x.usada === true,
             usadaEn: x.usadaEn instanceof Timestamp ? x.usadaEn.toDate() : null,
-            creadaEn: x.creadaEn instanceof Timestamp ? x.creadaEn.toDate() : new Date(), // serverTimestamp pendiente = ahora
+            creadaEn: x.creadaEn instanceof Timestamp ? x.creadaEn.toDate() : new Date(),
           };
         })
       ),
@@ -38,7 +37,6 @@ export function escucharEntradasDeEvento(uid: string, eventoId: string, alCambia
 
 const cache = new Map<string, NombreComprador>();
 
-// Solo nombre y usuario del comprador (no se muestra correo ni otros datos)
 export async function obtenerNombreComprador(uid: string): Promise<NombreComprador> {
   const guardado = cache.get(uid);
   if (guardado) return guardado;

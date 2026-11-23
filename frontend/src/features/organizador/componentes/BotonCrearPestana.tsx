@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colores } from '@/compartido/tema';
 import { estilos } from './BotonCrearPestana.estilos';
 
-// Botón central y elevado de la barra de pestañas
 export function BotonCrearPestana({ alPresionar }: { alPresionar: () => void }) {
   return (
     <View style={estilos.contenedor}>

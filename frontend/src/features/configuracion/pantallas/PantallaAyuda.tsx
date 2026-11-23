@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useBarraEstado } from '@/compartido/utilidades/useBarraEstado';
 import { Colores, Espaciado, Fuentes, Radios, Tipografia } from '@/compartido/tema';
@@ -7,6 +7,7 @@ import { EncabezadoConfig } from '../componentes/EncabezadoConfig';
 import { ModalEditarContenido } from '../componentes/ModalEditarContenido';
 import { AYUDA_POR_DEFECTO } from '../contenidoPorDefecto';
 import { useContenido } from '../hooks/useContenido';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
 const CORREO_SOPORTE = 'kjsjsbpepejkk3@gmail.com';
 
@@ -14,7 +15,7 @@ const escribirASoporte = async () => {
   try {
     await Linking.openURL(`mailto:${CORREO_SOPORTE}?subject=${encodeURIComponent('Soporte Eventos App')}`);
   } catch {
-    Alert.alert('No se pudo abrir el correo', 'Revisa que tengas una aplicación de correo configurada.');
+    mostrarAviso({ titulo: 'No se pudo abrir el correo', mensaje: 'Revisa que tengas una aplicación de correo configurada.', tipo: 'error' });
   }
 };
 
@@ -24,7 +25,6 @@ export function PantallaAyuda() {
   const [abierta, setAbierta] = useState<number | null>(null);
   const [editando, setEditando] = useState(false);
 
-  // La pregunta de soporte es fija (lleva el enlace al correo); el resto lo edita el administrador
   const preguntas = [
     ...items.map((i) => ({ p: i.titulo, r: i.texto, correo: false })),
     { p: '¿Cómo contacto a soporte?', r: 'Escríbenos desde el siguiente enlace:', correo: true },

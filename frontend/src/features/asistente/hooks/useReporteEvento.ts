@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
 
-// ¿Ya reportó este evento? (solo se permite un reporte por persona y evento)
 export function useReporteEvento(uid: string | undefined, eventoId: string | undefined) {
   const [yaReporto, setYaReporto] = useState(false);
   useEffect(() => {

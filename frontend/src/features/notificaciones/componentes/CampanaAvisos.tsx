@@ -6,13 +6,11 @@ import { useSesion } from '@/features/auth';
 import { useAvisos } from '../hooks/useAvisos';
 import { escucharToquesPush, registrarTokenPush } from '../servicios/servicioPush';
 
-// Campana del encabezado con el número de avisos sin leer; abre la lista de avisos
 export function CampanaAvisos() {
   const router = useRouter();
   const { perfil } = useSesion();
   const { sinLeer } = useAvisos(perfil?.uid, perfil?.rol === 'administrador');
 
-  // Registra este teléfono para recibir push (una sola vez por sesión)
   useEffect(() => {
     if (!perfil?.uid) return;
     escucharToquesPush();

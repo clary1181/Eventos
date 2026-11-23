@@ -6,7 +6,6 @@ import { Fuentes } from '@/compartido/tema';
 
 interface Propiedades { titulo: string; subtitulo?: string; alVolver?: () => void; derecha?: ReactNode }
 
-// Encabezado morado con esquinas redondeadas para pantallas internas (con o sin botón de volver)
 export function EncabezadoPantalla({ titulo, subtitulo, alVolver, derecha }: Propiedades) {
   const { top } = useSafeAreaInsets();
   return (

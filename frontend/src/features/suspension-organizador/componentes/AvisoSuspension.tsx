@@ -6,7 +6,6 @@ import { useSuspensionOrganizador } from '../hooks/useSuspensionOrganizador';
 
 export const fechaSuspension = (d: Date) => d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
 
-// Aviso rojo en el Inicio del organizador mientras su cuenta esté suspendida
 export function AvisoSuspension() {
   const { perfil } = useSesion();
   const s = useSuspensionOrganizador(perfil?.uid);

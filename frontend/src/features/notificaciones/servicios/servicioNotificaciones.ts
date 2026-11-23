@@ -18,19 +18,17 @@ const armar = (a: Omit<NuevoAviso, 'destinatarioId'> & { destinatarioId: string 
   ...(a.eventoId ? { eventoId: a.eventoId } : {}),
 });
 
-// Crea un aviso. Nunca lanza error: un aviso fallido no debe romper la acción principal (compra, aprobación, etc.)
 export async function avisar(a: NuevoAviso): Promise<void> {
   try {
     const uid = getAuth().currentUser?.uid;
     if (!uid) return;
-    await addDoc(collection(db, 'notificaciones'), armar(a, uid));
-    await enviarPush([a.destinatarioId], a.titulo, a.mensaje, a.ruta, uid);
+    const referencia = await addDoc(collection(db, 'notificaciones'), armar(a, uid));
+    await enviarPush([a.destinatarioId], a.titulo, a.mensaje, a.ruta, uid, referencia.id);
   } catch (e) {
     console.warn('No se pudo crear el aviso:', e);
   }
 }
 
-// El mismo aviso para varios destinatarios (en lotes)
 export async function avisarVarios(destinatarios: string[], base: Omit<NuevoAviso, 'destinatarioId'>): Promise<void> {
   try {
     const uid = getAuth().currentUser?.uid;
@@ -48,7 +46,6 @@ export async function avisarVarios(destinatarios: string[], base: Omit<NuevoAvis
 
 export const avisarAdministradores = (a: Omit<NuevoAviso, 'destinatarioId'>) => avisar({ ...a, destinatarioId: ADMINISTRADORES });
 
-// Datos mínimos de un evento (para saber a quién avisar y cómo se llama)
 export async function datosEvento(id: string): Promise<{ organizadorId: string; titulo: string } | null> {
   try {
     const d = (await getDoc(doc(db, 'eventos', id))).data();
@@ -58,7 +55,6 @@ export async function datosEvento(id: string): Promise<{ organizadorId: string; 
   }
 }
 
-// Asistentes que siguen a un organizador (solo lo puede consultar un administrador)
 export async function seguidoresDe(organizadorId: string): Promise<string[]> {
   try {
     const s = await getDocs(query(collection(db, 'seguidos'), where('organizadorId', '==', organizadorId)));
@@ -69,7 +65,6 @@ export async function seguidoresDe(organizadorId: string): Promise<string[]> {
   }
 }
 
-// Asistentes con entradas de un evento (solo lo puede consultar un administrador)
 export async function compradoresDeEvento(eventoId: string): Promise<string[]> {
   try {
     const s = await getDocs(query(collection(db, 'entradas'), where('eventoId', '==', eventoId)));
@@ -87,10 +82,9 @@ const aAviso = (id: string, x: Record<string, unknown>): Aviso => ({
   mensaje: String(x.mensaje ?? ''),
   ruta: String(x.ruta ?? ''),
   leida: x.leida === true,
-  creadaEn: x.creadaEn instanceof Timestamp ? x.creadaEn.toDate() : new Date(), // serverTimestamp pendiente = ahora
+  creadaEn: x.creadaEn instanceof Timestamp ? x.creadaEn.toDate() : new Date(),
 });
 
-// Avisos de la persona; el administrador también recibe los dirigidos a "administradores"
 export function escucharAvisos(uid: string, esAdmin: boolean, alCambiar: (l: Aviso[]) => void, alError: (e: Error) => void): Unsubscribe {
   const porDestino = new Map<string, Aviso[]>();
   const emitir = () => alCambiar([...porDestino.values()].flat().sort((a, b) => b.creadaEn.getTime() - a.creadaEn.getTime()));

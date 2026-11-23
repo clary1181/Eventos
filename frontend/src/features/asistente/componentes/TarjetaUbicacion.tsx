@@ -1,14 +1,14 @@
 import React from 'react';
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colores } from '@/compartido/tema';
 import type { EventoPublico } from '../tipos';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
-// Abre la app de mapas del teléfono con una búsqueda del lugar (el mapa propio llega en una fase posterior)
 const abrirMapa = (e: EventoPublico) => {
   const consulta = encodeURIComponent(`${e.lugar}, ${e.direccion}, Ensenada, Baja California`);
   Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${consulta}`).catch(() =>
-    Alert.alert('No se pudo abrir el mapa', 'Instala o actualiza una aplicación de mapas.')
+    mostrarAviso({ titulo: 'No se pudo abrir el mapa', mensaje: 'Instala o actualiza una aplicación de mapas.', tipo: 'error' })
   );
 };
 

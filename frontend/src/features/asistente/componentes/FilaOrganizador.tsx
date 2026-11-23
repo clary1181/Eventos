@@ -14,7 +14,6 @@ interface Propiedades {
   alSeguir: () => void;
 }
 
-// Fila con foto, nombre y botón Seguir; al tocarla se abre el perfil del organizador
 export function FilaOrganizador({ organizadorId, nombreRespaldo, detalle, siguiendo, alAbrir, alSeguir }: Propiedades) {
   const o = useOrganizadorPublico(organizadorId);
   const nombre = o?.nombre || nombreRespaldo || 'Organizador';

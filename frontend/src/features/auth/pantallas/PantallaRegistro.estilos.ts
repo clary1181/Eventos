@@ -15,7 +15,7 @@ export const estilos = StyleSheet.create({
   filaInicio: { flexDirection: 'row', justifyContent: 'center', gap: Espaciado.sm, marginTop: Espaciado.xl },
   textoInicio: { color: Colores.texto, fontSize: Tipografia.cuerpo - 1, fontFamily: Fuentes.regular },
   enlaceInicio: { color: Colores.primario, fontSize: Tipografia.cuerpo - 1, fontFamily: Fuentes.extranegrita },
-  // Modales
+
   tituloModal: { fontSize: 22, fontFamily: Fuentes.extranegrita, color: Colores.primarioOscuro, textAlign: 'center', marginBottom: Espaciado.lg },
   textoModal: { fontSize: Tipografia.cuerpo, fontFamily: Fuentes.regular, color: Colores.textoSuave, textAlign: 'center', lineHeight: 22, marginBottom: Espaciado.lg },
   opcionCiudad: {

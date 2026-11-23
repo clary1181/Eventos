@@ -22,7 +22,6 @@ const aPropuesta = (v: unknown): PropuestaCambio | null => {
   return r;
 };
 
-// El administrador puede leer los eventos en cualquier estado (reglas)
 export function escucharEventos(alCambiar: (l: EventoAdmin[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     collection(db, 'eventos'),
@@ -60,7 +59,6 @@ export function escucharEventos(alCambiar: (l: EventoAdmin[]) => void, alError: 
   );
 }
 
-// Solo estado/observaciones/motivoRechazo/actualizadoEn, y solo desde "pendiente_aprobacion" (reglas)
 export async function dictaminarEvento(
   id: string,
   estado: 'aprobado' | 'requiere_correccion' | 'rechazado',
@@ -85,7 +83,6 @@ export async function dictaminarEvento(
     eventoId: id,
   });
 
-  // Al publicarse, los asistentes que siguen al organizador se enteran
   if (estado === 'aprobado') {
     await avisarVarios(await seguidoresDe(evento.organizadorId), {
       tipo: 'organizador_nuevo_evento',
@@ -97,7 +94,6 @@ export async function dictaminarEvento(
   }
 }
 
-// Aprueba la propuesta de un evento con ventas: aplica los campos propuestos y limpia la propuesta (reglas del administrador)
 export async function aprobarCambios(e: EventoAdmin): Promise<void> {
   const p = e.propuesta;
   if (!p) throw new Error('El evento no tiene cambios propuestos.');
@@ -119,7 +115,7 @@ export async function aprobarCambios(e: EventoAdmin): Promise<void> {
     ruta: '/organizador/mis-eventos',
     eventoId: e.id,
   });
-  // Quienes ya compraron se enteran del cambio de fecha, lugar, precio o foto
+
   const compradores = await compradoresDeEvento(e.id);
   await avisarVarios(compradores, {
     tipo: 'evento_actualizado',
@@ -130,7 +126,6 @@ export async function aprobarCambios(e: EventoAdmin): Promise<void> {
   });
 }
 
-// Rechaza la propuesta: el evento sigue como estaba y el organizador ve el motivo (puede proponer otra vez)
 export async function rechazarCambios(id: string, motivo: string, evento: { organizadorId: string; titulo: string }): Promise<void> {
   await updateDoc(doc(db, 'eventos', id), { estadoCambio: 'requiere_correccion', observacionesCambio: motivo.trim(), actualizadoEn: serverTimestamp() });
   await avisar({

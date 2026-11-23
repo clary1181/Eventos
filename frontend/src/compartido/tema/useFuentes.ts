@@ -7,7 +7,6 @@ import {
   useFonts,
 } from '@expo-google-fonts/montserrat';
 
-// Carga Montserrat; devuelve true cuando ya se puede dibujar el texto
 export function useFuentes(): boolean {
   const [listas] = useFonts({
     Montserrat_400Regular,

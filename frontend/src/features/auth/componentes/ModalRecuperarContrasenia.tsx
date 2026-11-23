@@ -27,9 +27,16 @@ export function ModalRecuperarContrasenia({ visible, correo, establecerCorreo, e
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
+        maxLength={254}
       />
       <BotonPrimario titulo="Enviar enlace" onPress={enviar} cargando={enviando} />
-      <Pressable style={estilos.cancelar} onPress={cerrar}>
+      <Pressable
+        style={[estilos.cancelar, enviando && { opacity: 0.5 }]}
+        onPress={enviando ? () => undefined : cerrar}
+        disabled={enviando}
+        accessibilityRole="button"
+        accessibilityLabel="Cancelar"
+      >
         <Text style={estilos.textoCancelar}>Cancelar</Text>
       </Pressable>
     </ModalCentrado>

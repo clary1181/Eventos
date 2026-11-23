@@ -22,7 +22,7 @@ export interface EventoAdmin {
   actualizadoEn: Date | null;
   estadoCambio: 'ninguno' | 'pendiente' | 'requiere_correccion';
   observacionesCambio: string;
-  propuesta: PropuestaCambio | null; // cambios de fecha, lugar, dirección, precio o foto de un evento con ventas
+  propuesta: PropuestaCambio | null;
 }
 
 export interface PropuestaCambio {

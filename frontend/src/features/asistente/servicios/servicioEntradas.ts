@@ -9,7 +9,6 @@ export interface ResultadoCompra {
   total: number;
 }
 
-// Código secreto del QR (compra simulada: se genera en el teléfono)
 function generarToken(): string {
   const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
   let t = '';
@@ -17,14 +16,11 @@ function generarToken(): string {
   return t;
 }
 
-// Compra simulada: NO se envía ningún dato de la tarjeta. Las entradas se guardan directo en Firestore.
-// El ID de cada entrada es {uid}_{eventoId}_{1..5}: las reglas solo permiten esos 5 IDs, y eso limita a 5 por persona y evento.
 export async function comprarEntradas(uid: string, eventoId: string, cantidad: number): Promise<ResultadoCompra> {
   if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > MAX_ENTRADAS_POR_EVENTO) {
     throw new Error(`Elige entre 1 y ${MAX_ENTRADAS_POR_EVENTO} entradas.`);
   }
 
-  // Números de entrada que ya tiene esta persona en este evento
   const previas = await getDocs(query(collection(db, 'entradas'), where('asistenteId', '==', uid), where('eventoId', '==', eventoId)));
   const usados = new Set(previas.docs.map((d) => Number(d.data().numero)));
   const libres = [1, 2, 3, 4, 5].filter((n) => !usados.has(n));
@@ -80,7 +76,6 @@ export async function comprarEntradas(uid: string, eventoId: string, cantidad: n
     return { ordenId, entradas: ids, total: precio * cantidad };
   });
 
-  // Aviso al organizador (no bloquea la compra si falla)
   if (organizadorId) {
     await avisar({
       destinatarioId: organizadorId,
@@ -94,7 +89,6 @@ export async function comprarEntradas(uid: string, eventoId: string, cantidad: n
   return resultado;
 }
 
-// Cuántas entradas de este evento ya tiene el asistente (para respetar el límite)
 export function escucharCantidadEntradas(uid: string, eventoId: string, alCambiar: (n: number) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'entradas'), where('asistenteId', '==', uid), where('eventoId', '==', eventoId)),

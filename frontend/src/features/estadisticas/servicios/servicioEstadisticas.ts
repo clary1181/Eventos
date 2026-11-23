@@ -4,7 +4,6 @@ import type { CalificacionResumen, EntradaResumen } from '../tipos';
 
 const fecha = (v: unknown) => (v instanceof Timestamp ? v.toDate() : new Date());
 
-// Entradas vendidas de los eventos del organizador (las reglas dejan leer las que tienen su organizadorId)
 export function escucharEntradasOrganizador(uid: string, alCambiar: (l: EntradaResumen[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'entradas'), where('organizadorId', '==', uid)),
@@ -19,7 +18,6 @@ export function escucharEntradasOrganizador(uid: string, alCambiar: (l: EntradaR
   );
 }
 
-// Solo calificaciones visibles: las reglas exigen filtrar oculta == false
 export function escucharCalificacionesOrganizador(uid: string, alCambiar: (l: CalificacionResumen[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'calificaciones'), where('organizadorId', '==', uid), where('oculta', '==', false)),

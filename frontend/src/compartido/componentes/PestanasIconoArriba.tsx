@@ -6,7 +6,6 @@ import { Colores, Fuentes } from '@/compartido/tema';
 type Opcion = { id: string; titulo: string; icono: React.ComponentProps<typeof MaterialCommunityIcons>['name'] };
 interface Propiedades { opciones: Opcion[]; activa: string; alCambiar: (id: string) => void }
 
-// Selector de secciones con el icono arriba: cabe en 4 secciones sin recortar los títulos
 export function PestanasIconoArriba({ opciones, activa, alCambiar }: Propiedades) {
   return (
     <View style={estilos.fila}>

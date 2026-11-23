@@ -12,8 +12,14 @@ import { ESTADOS_EDITABLES, type EventoEditable } from '../tipos';
 
 function BotonVolver({ alPulsar }: { alPulsar: () => void }) {
   return (
-    <Pressable onPress={alPulsar} style={estilos.volver} accessibilityRole="button" accessibilityLabel="Volver" hitSlop={8}>
-      <Ionicons name="chevron-back" size={22} color={Colores.primario} />
+    <Pressable
+      onPress={alPulsar}
+      style={({ pressed }) => [estilos.volver, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
+      accessibilityRole="button"
+      accessibilityLabel="Volver"
+      hitSlop={10}
+    >
+      <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
       <Text style={estilos.textoVolver}>Volver</Text>
     </Pressable>
   );
@@ -23,6 +29,8 @@ function ContenidoEdicion({ evento }: { evento: EventoEditable }) {
   const router = useRouter();
   const formulario = useFormularioEvento(evento);
   const piden = evento.estado === 'requiere_correccion' && evento.observaciones !== '';
+  const moderado = evento.estado === 'suspendido' || evento.estado === 'rechazado';
+  const etiquetaMotivo = evento.estado === 'suspendido' ? 'Tu evento fue suspendido' : 'Tu evento fue rechazado';
 
   return (
     <FormularioEvento
@@ -32,10 +40,18 @@ function ContenidoEdicion({ evento }: { evento: EventoEditable }) {
       textoBoton="Guardar y reenviar a revisión"
       superior={<BotonVolver alPulsar={() => router.back()} />}
       avisos={
-        piden ? (
+        piden || moderado ? (
           <View style={estilos.correcciones}>
-            <Text style={estilos.tituloCorrecciones}>El administrador pidió correcciones</Text>
-            <Text style={estilos.textoCorrecciones}>{evento.observaciones}</Text>
+            <Text style={estilos.tituloCorrecciones}>{piden ? 'El administrador pidió correcciones' : etiquetaMotivo}</Text>
+            <Text style={estilos.textoCorrecciones}>
+              {piden ? evento.observaciones : evento.motivoRechazo || 'El administrador no indicó un motivo.'}
+            </Text>
+            {moderado && (
+              <Text style={[estilos.textoCorrecciones, { marginTop: 8 }]}>
+                Corrígelo y envíalo a revisión: el administrador decidirá si vuelve a publicarse.
+                {evento.vendidas > 0 ? ' Como ya vendió entradas, no se pueden cambiar la fecha, el lugar, la dirección, el precio ni la foto.' : ''}
+              </Text>
+            )}
           </View>
         ) : undefined
       }
@@ -53,7 +69,7 @@ export function PantallaEditarEvento() {
   let mensaje: string | null = error;
   if (!mensaje && evento) {
     if (!ESTADOS_EDITABLES.includes(evento.estado)) {
-      mensaje = 'Este evento ya no se puede editar desde aquí (publicado, rechazado o suspendido).';
+      mensaje = 'Este evento ya no se puede editar desde aquí. Por favor, contacta al administrador si necesitas hacer cambios.';
     } else if (evento.fechaFin.getTime() <= Date.now()) {
       mensaje = 'Este evento ya terminó y no se puede editar.';
     }
@@ -80,8 +96,12 @@ export function PantallaEditarEvento() {
 const estilos = StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12, backgroundColor: '#FCFAFF' },
   mensaje: { fontSize: 15, color: Colores.texto, textAlign: 'center', lineHeight: 21 },
-  volver: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginLeft: -6, marginBottom: 8 },
-  textoVolver: { fontSize: 15, fontWeight: '700', color: Colores.primario },
+  volver: {
+  flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 6, marginBottom: 12,
+  height: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: Colores.primario,
+  elevation: 3, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
+  },
+  textoVolver: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   correcciones: { backgroundColor: '#FDE8D4', borderRadius: 16, padding: 14, marginTop: 16 },
   tituloCorrecciones: { fontSize: 13, fontWeight: '800', color: '#B4530A' },
   textoCorrecciones: { fontSize: 14, color: Colores.texto, marginTop: 4, lineHeight: 20 },

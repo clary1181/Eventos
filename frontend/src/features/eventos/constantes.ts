@@ -5,7 +5,6 @@ import type { EstadoEvento } from './tipos';
 
 type NombreIcono = ComponentProps<typeof Ionicons>['name'];
 
-// Cómo se muestra cada estado del evento (insignias de las tarjetas)
 export const PRESENTACION_ESTADO: Record<EstadoEvento, { etiqueta: string; icono: NombreIcono; color: string; fondo: string }> = {
   aprobado: { etiqueta: 'Publicado', icono: 'checkmark-circle', color: Colores.exitoTexto, fondo: Colores.exitoFondo },
   pendiente_aprobacion: { etiqueta: 'Pendiente de verificación', icono: 'time', color: Colores.advertencia, fondo: Colores.advertenciaFondo },

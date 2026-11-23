@@ -16,10 +16,9 @@ const CONTENIDO: Record<PerfilOrganizador['estadoVerificacion'], { titulo: strin
 type Propiedades = {
   estado: PerfilOrganizador['estadoVerificacion'];
   alPresionar: () => void;
-  elevado?: boolean;     // sombra (cuando se encima sobre la foto)
+  elevado?: boolean;
 };
 
-// Aviso del estado de verificación del organizador
 export function BannerVerificacion({ estado, alPresionar, elevado = false }: Propiedades) {
   const c = CONTENIDO[estado];
   const aprobada = estado === 'aprobada';

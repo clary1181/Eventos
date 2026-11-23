@@ -234,6 +234,12 @@ service cloud.firestore {
             && n.estado == 'aprobado'
             && !c.hasAny(camposSensibles())
             && cambioPropuestoValido(r, n, c))
+          // D: rechazado o suspendido por el administrador. Al corregirlo vuelve a revisión.
+          // Si ya vendió entradas, no se tocan los campos sensibles (los compradores ya los vieron)
+          || (r.estado in ['rechazado','suspendido']
+            && !c.hasAny(['estadoCambio','cambioPropuesto'])
+            && n.estado == 'pendiente_aprobacion'
+            && (r.vendidas == 0 || !c.hasAny(camposSensibles())))
         );
     }
 
@@ -506,7 +512,7 @@ service cloud.firestore {
         && textoValido(nuevo().mensaje, 1, 500)
         && (!('ruta' in nuevo()) || textoValido(nuevo().ruta, 1, 200))
         && (!('eventoId' in nuevo()) || textoValido(nuevo().eventoId, 1, 100))
-        && nuevo().tipo in ['evento_nuevo','cambios_pendientes','reporte_nuevo','entradas_compradas',
+        && nuevo().tipo in [        'evento_nuevo','cambios_pendientes','reporte_nuevo','verificacion_nueva','entradas_compradas',
              'evento_aprobado','evento_rechazado','evento_correccion','cambios_aprobados','cambios_rechazados',
              'evento_reactivado','reporte_recibido','verificacion_resuelta','cuenta_suspendida',
              'suspension_levantada','evento_suspendido','evento_actualizado','reporte_resuelto','organizador_nuevo_evento']
@@ -515,7 +521,7 @@ service cloud.firestore {
           esAdmin()
           // Organizador: avisa a los administradores que hay un evento por revisar
           || (esRol('organizador') && nuevo().destinatarioId == 'administradores'
-              && nuevo().tipo in ['evento_nuevo','cambios_pendientes','reporte_nuevo'])
+              && nuevo().tipo in ['evento_nuevo','cambios_pendientes','reporte_nuevo','verificacion_nueva'])
           // Asistente: avisa a los administradores de un reporte nuevo
           || (esRol('asistente') && nuevo().destinatarioId == 'administradores'
               && nuevo().tipo == 'reporte_nuevo')
@@ -536,8 +542,6 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ---------- tokensPush (token de notificaciones push de cada teléfono) ----------
-    // Lo escribe su dueño; cualquier sesión puede leerlo para poder enviarle un aviso.
     match /tokensPush/{id} {
       allow read: if autenticado();
       allow create, update: if autenticado() && miUid() == id

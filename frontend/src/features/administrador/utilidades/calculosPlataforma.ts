@@ -2,11 +2,9 @@ import { desdePeriodo, type Periodo } from '@/features/estadisticas';
 import type { DatosPlataforma } from '../servicios/servicioResumenAdmin';
 import type { ResumenAdministrador } from '../tipos';
 
-// Un dato sin fecha (serverTimestamp aún pendiente) cuenta como reciente
 const enPeriodo = (d: Date | null, desde: number) => desde === 0 || !d || d.getTime() >= desde;
 const suma = (l: number[]) => l.reduce((a, b) => a + b, 0);
 
-// Tarjetas del Inicio: dependen del periodo; las tareas pendientes no
 export function resumenInicio(d: DatosPlataforma, periodo: Periodo, ahora = Date.now()): ResumenAdministrador {
   const desde = desdePeriodo(periodo, ahora);
   return {
@@ -18,7 +16,7 @@ export function resumenInicio(d: DatosPlataforma, periodo: Periodo, ahora = Date
     },
     tareas: {
       organizadoresPorVerificar: d.solicitudesPendientes,
-      // Eventos nuevos o con cambios propuestos (eventos con ventas) en espera de aprobación
+
       eventosPorRevisar: d.eventos ? d.eventos.filter((e) => e.estado === 'pendiente_aprobacion' || (e.estado === 'aprobado' && e.estadoCambio === 'pendiente')).length : null,
       reportesSinRevisar: d.reportes ? d.reportes.filter((r) => r.estado === 'pendiente_moderacion').length : null,
     },
@@ -43,7 +41,6 @@ export function estadisticasPlataforma(d: DatosPlataforma, periodo: Periodo, aho
   const entradas = d.entradas?.filter((e) => enPeriodo(e.creadaEn, desde)) ?? null;
   const reportes = d.reportes?.filter((r) => enPeriodo(r.creadoEn, desde)) ?? null;
 
-  // Asistencia: entradas validadas sobre las vendidas de eventos que ya terminaron
   let asistencia: number | null = null;
   if (entradas && d.eventos) {
     const terminados = new Set(d.eventos.filter((e) => e.fechaFin && e.fechaFin.getTime() < ahora).map((e) => e.id));
@@ -73,7 +70,6 @@ export function estadisticasPlataforma(d: DatosPlataforma, periodo: Periodo, aho
       ].filter((i) => i.valor > 0)
     : null;
 
-  // Rankings por ventas del periodo
   const titulos = new Map((d.eventos ?? []).map((e) => [e.id, e.titulo]));
   const organizadores = new Map((d.eventos ?? []).map((e) => [e.organizadorId, e.organizadorNombre]));
   const ranking = (clave: (e: { eventoId: string; organizadorId: string }) => string, nombre: (k: string) => string): ItemRanking[] => {
@@ -88,7 +84,7 @@ export function estadisticasPlataforma(d: DatosPlataforma, periodo: Periodo, aho
 
   return {
     usuariosNuevos: usuarios?.length ?? null,
-    organizadoresVerificados: d.usuarios ? d.usuarios.filter((u) => u.rol === 'organizador' && u.estaVerificado).length : null, // total, no depende del periodo
+    organizadoresVerificados: d.usuarios ? d.usuarios.filter((u) => u.rol === 'organizador' && u.estaVerificado).length : null,
     eventosCreados: eventos?.length ?? null,
     eventosPublicados: eventos ? eventos.filter((e) => e.estado === 'aprobado').length : null,
     entradas: entradas?.length ?? null,

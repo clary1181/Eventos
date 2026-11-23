@@ -6,12 +6,11 @@ import { Colores } from '@/compartido/tema';
 
 interface Propiedades {
   texto: string;
-  aviso?: string; // p. ej. "Quedan 12 entradas"
+  aviso?: string;
   habilitado: boolean;
   alPulsar: () => void;
 }
 
-// Botón fijo al pie de la pantalla de detalle
 export function BarraCompra({ texto, aviso, habilitado, alPulsar }: Propiedades) {
   const { bottom } = useSafeAreaInsets();
   return (

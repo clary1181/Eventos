@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraMarca, BotonPrimario, CampoTexto, FondoHero } from '@/compartido/componentes';
@@ -15,7 +15,6 @@ import { useSolicitudVerificacion } from '../hooks/useSolicitudVerificacion';
 import type { SolicitudVerificacion } from '../tipos';
 import { estilos } from './PantallaVerificacion.estilos';
 
-// Formulario (sin solicitud o devuelta con observaciones)
 function Formulario({ uid, previa, alTerminar }: { uid: string; previa: SolicitudVerificacion | null; alTerminar: () => void }) {
   const f = useFormularioVerificacion(uid, previa);
   const devuelta = previa?.estado === 'correccion_requerida';
@@ -57,7 +56,7 @@ export function PantallaVerificacion() {
   useBarraEstado('light');
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { top } = useSafeAreaInsets();
+  const { top, bottom } = useSafeAreaInsets();
   const { perfil } = useSesion();
   const { solicitud, cargando, error } = useSolicitudVerificacion(perfil?.uid);
 
@@ -68,7 +67,15 @@ export function PantallaVerificacion() {
   const editable = !solicitud || solicitud.estado === 'correccion_requerida';
 
   return (
-    <ScrollView style={estilos.raiz} contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false} overScrollMode="never">
+    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <ScrollView
+      style={estilos.raiz}
+      contentContainerStyle={[estilos.contenido, { paddingBottom: Math.max(32, bottom + 24) }]}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+      overScrollMode="never"
+    >
       <FondoHero alto={alto}>
         <View style={[estilos.heroContenido, { paddingTop: top + 8 }]}>
           <BarraMarca alAtras={alAtras} />
@@ -89,5 +96,6 @@ export function PantallaVerificacion() {
         )}
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

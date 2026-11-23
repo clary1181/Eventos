@@ -7,17 +7,14 @@ import { Colores } from '@/compartido/tema';
 import { ALTO_ONDA, estilos } from './EncabezadoAuth.estilos';
 import { IconoTicket } from './IconoTicket';
 
-// Foto de Ensenada (frontend/assets/imagenes/ensenada.jpg), proporción 1600x1066
 const FOTO_ENSENADA = require('../../../../assets/imagenes/ensenada.jpg');
 const RELACION_FOTO = 1600 / 1066;
 
-// Parte superior de las pantallas de acceso: foto completa, degradado morado, marca y onda blanca
 export function EncabezadoAuth({ compacto = false }: { compacto?: boolean }) {
   const { width, height } = useWindowDimensions();
   const { top } = useSafeAreaInsets();
   const [fuentesListas] = useFonts({ Montserrat_400Regular, Montserrat_800ExtraBold });
 
-  // Factor según el alto del teléfono (800 = referencia)
   const escala = Math.min(Math.max(height / 800, 0.8), 1.1);
   const altoFoto = width / RELACION_FOTO;
   const altura = Math.min(altoFoto * 1.2 + top, height * (compacto ? 0.3 : 0.33));

@@ -1,6 +1,5 @@
 import type { EntradaAsistente } from '@/features/asistente/utilidades/entradas';
 
-// Evento que el organizador puede atender en la puerta
 export interface EventoValidable {
   id: string;
   titulo: string;

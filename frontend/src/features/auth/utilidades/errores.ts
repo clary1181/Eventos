@@ -4,7 +4,6 @@ export const errorConCodigo = (mensaje: string, code: string) =>
 export const codigoDeError = (error: unknown): string | undefined =>
   (error as { code?: string } | null)?.code;
 
-// Convierte los errores de Firebase en mensajes comprensibles
 export const mensajeDeError = (error: unknown): string => {
   switch (codigoDeError(error)) {
     case 'auth/invalid-credential':
@@ -19,9 +18,12 @@ export const mensajeDeError = (error: unknown): string => {
     case 'auth/too-many-requests':
       return 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.';
     case 'auth/network-request-failed':
-      return 'No hay conexión con el servidor. Revisa tu internet (o la IP de los emuladores).';
+      return 'No hay conexión a internet. Revisa tu red y vuelve a intentarlo.';
+    case 'unavailable':
+    case 'deadline-exceeded':
+      return 'No pudimos conectarnos. Revisa tu conexión a internet e inténtalo de nuevo.';
     case 'auth/operation-not-allowed':
-      return 'Este método de acceso no está habilitado en Firebase.';
+      return 'Este método de acceso no está disponible en este momento.';
     case 'auth/user-disabled':
       return 'Esta cuenta está desactivada. Contacta al administrador.';
     case 'auth/correo-no-verificado':
@@ -31,14 +33,14 @@ export const mensajeDeError = (error: unknown): string => {
     case 'auth/sin-sesion':
       return 'Tu sesión expiró. Vuelve a iniciar sesión.';
     case 'google/no-disponible':
-      return 'Google Sign-In requiere el build de desarrollo (no funciona en Expo Go).';
+      return 'El acceso con Google no está disponible en esta versión. Usa tu correo y contraseña.';
     case 'google/sin-configuracion':
-      return 'Falta configurar EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID en el archivo .env.';
+      return 'El acceso con Google no está configurado. Usa tu correo y contraseña.';
     case 'google/sin-token':
       return 'No se pudo obtener la cuenta de Google. Inténtalo de nuevo.';
     case '10':
     case 'DEVELOPER_ERROR':
-      return 'Configuración de Google incorrecta (revisa el SHA-1, el paquete y el webClientId).';
+      return 'No se pudo configurar el acceso con Google. Inténtalo de nuevo o usa tu correo.';
     case 'usuarios/nombre-en-uso':
       return 'Este nombre de usuario ya está registrado.';
     case 'permission-denied':

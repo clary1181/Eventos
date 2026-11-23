@@ -7,7 +7,7 @@ import { Colores } from '@/compartido/tema';
 type Icono = React.ComponentProps<typeof Ionicons>['name'];
 
 const icono = (activo: Icono, inactivo: Icono) =>
-  function IconoPestana({ color, focused }: { color: string; focused: boolean }) {
+  function IconoPestana({ color, focused }: { color: any; focused: boolean }) {
     return <Ionicons name={focused ? activo : inactivo} size={28} color={color} />;
   };
 

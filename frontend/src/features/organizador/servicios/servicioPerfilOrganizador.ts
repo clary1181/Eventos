@@ -2,8 +2,6 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
 import type { PerfilOrganizador } from '../tipos';
 
-// Escucha usuarios/{uid}: así la insignia y el estado de verificación se actualizan solos
-// cuando un administrador resuelve la solicitud.
 export const escucharPerfilOrganizador = (
   uid: string,
   alCambiar: (perfil: PerfilOrganizador | null) => void,
@@ -32,7 +30,6 @@ export const escucharPerfilOrganizador = (
     alError,
   );
 
-// El teléfono es privado: usuarios/{uid}/privado/perfil (solo lo lee su dueño)
 export const obtenerTelefono = async (uid: string): Promise<string | undefined> => {
   const instantanea = await getDoc(doc(db, 'usuarios', uid, 'privado', 'perfil'));
   const telefono = instantanea.exists() ? instantanea.data().telefono : undefined;

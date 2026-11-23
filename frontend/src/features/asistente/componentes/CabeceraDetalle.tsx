@@ -14,7 +14,6 @@ interface Propiedades {
   alCompartir: () => void;
 }
 
-// Foto a todo lo ancho con los botones de volver, favorito y compartir encima
 export function CabeceraDetalle({ imagenUrl, esFavorito, alVolver, alFavorito, alCompartir }: Propiedades) {
   const { top } = useSafeAreaInsets();
   return (

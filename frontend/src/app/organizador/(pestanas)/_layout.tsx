@@ -1,17 +1,18 @@
 import React from 'react';
+import type { ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Colores } from '@/compartido/tema';
 import { BotonCrearPestana, useAccionCrearEvento } from '@/features/organizador';
 import { useOpcionesPestanas } from '@/compartido/navegacion/useOpcionesPestanas';
 
 type Icono = React.ComponentProps<typeof Ionicons>['name'];
 const icono = (activo: Icono, inactivo: Icono) =>
-  function Pestana({ color, size, focused }: { color: string; size: number; focused: boolean }) {
-    return <Ionicons name={focused ? activo : inactivo} color={color} size={size} />;
+  function Pestana({ color, size, focused }: { color: ColorValue; size: number; focused: boolean }) {
+    const tinte = typeof color === 'string' ? color : Colores.primario;
+    return <Ionicons name={focused ? activo : inactivo} color={tinte} size={size} />;
   };
 
-// Barra inferior del organizador (como el diseño): Inicio, Mis eventos, Crear (botón central), Validar QR y Estadísticas.
-// El perfil se abre desde el icono de arriba a la derecha de Inicio.
 export default function PestanasOrganizador() {
   const opciones = useOpcionesPestanas();
   const crear = useAccionCrearEvento();

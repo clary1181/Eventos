@@ -11,7 +11,7 @@ export function useEventoPublico(id: string | undefined) {
     return escucharEventoPublico(
       id,
       (e) => { setEvento(e); setCargando(false); },
-      () => { setEvento(null); setCargando(false); } // sin permiso = no es público
+      () => { setEvento(null); setCargando(false); }
     );
   }, [id]);
 

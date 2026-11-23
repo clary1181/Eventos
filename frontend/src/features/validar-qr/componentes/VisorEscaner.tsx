@@ -12,7 +12,7 @@ interface Propiedades { evento: EventoValidable; uid: string; alCambiarEvento: (
 export function VisorEscaner({ evento, uid, alCambiarEvento }: Propiedades) {
   const { top } = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  // Marco centrado en la pantalla (un poco arriba del centro para dejar espacio al texto)
+
   const topMarco = Math.round(height / 2 - 125 - 30);
   const esc = useEscaner(evento.id, uid);
   const bloqueado = esc.procesando || !!esc.resultado;

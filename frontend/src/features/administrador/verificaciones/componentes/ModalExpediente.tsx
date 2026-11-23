@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView,
+  ActivityIndicator, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView,
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Colores } from '@/compartido/tema';
 import { ETIQUETA_ESTADO, PESTANAS_BANDEJA, type PerfilResumido, type SolicitudAdmin } from '../tipos';
 import { formatearFecha } from './TarjetaSolicitud';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
 interface Propiedades {
   solicitud: SolicitudAdmin | null;
@@ -22,26 +24,29 @@ const Dato = ({ etiqueta, valor }: { etiqueta: string; valor: string }) => (
   </View>
 );
 
-// Expediente completo de una solicitud con las acciones permitidas por las reglas:
-// pendiente → aceptar / devolver / rechazar; devuelta → solo rechazar; el resto, solo lectura
 export function ModalExpediente({ solicitud: s, perfil, procesando, alCerrar, alResolver }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const [observaciones, setObservaciones] = useState('');
   useEffect(() => setObservaciones(s?.observaciones ?? ''), [s?.id, s?.observaciones]);
 
   const color = PESTANAS_BANDEJA.find((p) => p.estado === s?.estado)?.color ?? Colores.primario;
 
   const confirmarAceptar = () =>
-    Alert.alert('Aceptar organizador', 'Podrá crear y publicar eventos.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Aceptar', onPress: () => alResolver('aprobada', '') },
-    ]);
+    mostrarAviso({
+      titulo: 'Aceptar organizador',
+      mensaje: 'Podrá crear y publicar eventos.',
+      tipo: 'info',
+      textoCancelar: 'Cancelar',
+      textoConfirmar: 'Aceptar',
+      alConfirmar: () => alResolver('aprobada', ''),
+    });
 
-  const abrir = (url: string) => Linking.openURL(url).catch(() => Alert.alert('Error', 'No se pudo abrir la imagen.'));
+  const abrir = (url: string) => Linking.openURL(url).catch(() => mostrarAviso({ titulo: 'Error', mensaje: 'No se pudo abrir la imagen.', tipo: 'error' }));
 
   return (
     <Modal visible={s !== null} animationType="slide" transparent onRequestClose={alCerrar}>
-      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={estilos.hoja}>
+      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={[estilos.hoja, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
           {s && (
             <>
               <View style={estilos.cabecera}>
@@ -54,7 +59,12 @@ export function ModalExpediente({ solicitud: s, perfil, procesando, alCerrar, al
                 </View>
               </View>
 
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <ScrollView
+                style={{ flexShrink: 1 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 16 }}
+              >
                 <Dato etiqueta="Teléfono" valor={s.telefono} />
                 <Dato etiqueta="Redes y sitio web" valor={s.redes.join('\n')} />
                 <Dato etiqueta="Descripción de la actividad" valor={s.descripcionActividad} />

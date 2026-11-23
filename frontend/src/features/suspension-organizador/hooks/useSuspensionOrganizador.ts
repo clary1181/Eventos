@@ -4,7 +4,6 @@ import { db } from '@/infraestructura/firebase';
 
 export interface Suspension { hasta: Date; motivo: string }
 
-// Suspensión vigente de la cuenta del organizador (null si no tiene o ya venció). Se vuelve a evaluar cada minuto.
 export function useSuspensionOrganizador(uid: string | undefined): Suspension | null {
   const [datos, setDatos] = useState<Suspension | null>(null);
   const [ahora, setAhora] = useState(Date.now());

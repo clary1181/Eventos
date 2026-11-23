@@ -7,6 +7,7 @@ import { avisarAdministradores } from '@/features/notificaciones/servicios/servi
 
 const PRESET_PORTADAS = process.env.EXPO_PUBLIC_CLOUDINARY_PRESET_EVENTOS ?? '';
 const esRemota = (uri: string) => /^https?:\/\//i.test(uri);
+const errorEdicion = (mensaje: string) => Object.assign(new Error(mensaje), { esEdicion: true });
 const aFecha = (v: unknown) => (v instanceof Timestamp ? v.toDate() : new Date(0));
 
 export async function obtenerEventoParaEditar(id: string): Promise<EventoEditable | null> {
@@ -17,6 +18,7 @@ export async function obtenerEventoParaEditar(id: string): Promise<EventoEditabl
     id: instantanea.id,
     estado: String(x.estado ?? ''),
     observaciones: String(x.observaciones ?? ''),
+    motivoRechazo: String(x.motivoRechazo ?? ''),
     titulo: String(x.titulo ?? ''),
     descripcion: String(x.descripcion ?? ''),
     categoria: String(x.categoria ?? ''),
@@ -33,9 +35,11 @@ export async function obtenerEventoParaEditar(id: string): Promise<EventoEditabl
   };
 }
 
-// Corrige un evento aún no público y lo devuelve a revisión (regla A de firestore.rules).
-// Solo se envían los campos que las reglas permiten; la foto solo si se eligió una nueva.
-export async function editarEvento(id: string, d: DatosFormularioEvento): Promise<void> {
+export async function editarEvento(id: string, d: DatosFormularioEvento, original?: EventoEditable): Promise<void> {
+  if (original && original.vendidas > 0 && analizarCambios(original, d).sensibles.length > 0) {
+    throw errorEdicion('Como este evento ya vendió entradas, no puedes cambiar la fecha, el lugar, la dirección, el precio ni la foto. Puedes corregir el título, la descripción, la categoría y la capacidad.');
+  }
+  const suspendido = original?.estado === 'suspendido';
   const campos: Record<string, unknown> = {
     titulo: limpiarTexto(d.titulo),
     descripcion: limpiarTexto(d.descripcion, true),
@@ -60,21 +64,19 @@ export async function editarEvento(id: string, d: DatosFormularioEvento): Promis
   await updateDoc(doc(db, 'eventos', id), campos);
   await avisarAdministradores({
     tipo: 'evento_nuevo',
-    titulo: 'Evento corregido por revisar',
-    mensaje: `El organizador reenvió "${limpiarTexto(d.titulo)}" con correcciones.`,
+    titulo: suspendido ? 'Evento suspendido corregido' : 'Evento corregido por revisar',
+    mensaje: suspendido
+      ? `El organizador corrigió "${limpiarTexto(d.titulo)}" tras la suspensión y pide que lo revises.`
+      : `El organizador reenvió "${limpiarTexto(d.titulo)}" con correcciones.`,
     ruta: '/administrador/eventos',
     eventoId: id,
   });
 }
 
-// ---------- Eventos ya publicados (aprobados) ----------
-
 export interface CambiosDetectados {
-  sensibles: string[]; // fecha, lugar, dirección, precio o foto: requieren revisión del administrador
-  simples: string[];   // título, descripción, categoría, capacidad: se aplican de inmediato
+  sensibles: string[];
+  simples: string[];
 }
-
-const errorEdicion = (mensaje: string) => Object.assign(new Error(mensaje), { esEdicion: true });
 
 export function analizarCambios(o: EventoEditable, d: DatosFormularioEvento): CambiosDetectados {
   const sensibles: string[] = [];
@@ -91,10 +93,6 @@ export function analizarCambios(o: EventoEditable, d: DatosFormularioEvento): Ca
   return { sensibles, simples };
 }
 
-// Edita un evento aprobado (reglas B y C de firestore.rules):
-//  - Cambios simples: se aplican de inmediato.
-//  - Cambios sensibles SIN ventas: el evento vuelve a "pendiente de aprobación".
-//  - Cambios sensibles CON ventas: se guardan como propuesta (cambioPropuesto); el evento sigue publicado hasta que el administrador la apruebe.
 export async function editarEventoPublicado(o: EventoEditable, d: DatosFormularioEvento): Promise<CambiosDetectados> {
   const cambios = analizarCambios(o, d);
   if (cambios.sensibles.length === 0 && cambios.simples.length === 0) throw errorEdicion('No hiciste ningún cambio.');
@@ -126,7 +124,7 @@ export async function editarEventoPublicado(o: EventoEditable, d: DatosFormulari
 
     if (o.vendidas === 0) {
       Object.assign(campos, sensibles);
-      campos.estado = 'pendiente_aprobacion'; // vuelve a revisión
+      campos.estado = 'pendiente_aprobacion';
     } else {
       campos.estadoCambio = 'pendiente';
       campos.cambioPropuesto = { ...sensibles, solicitadoEn: serverTimestamp() };

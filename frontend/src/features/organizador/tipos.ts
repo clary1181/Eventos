@@ -1,6 +1,5 @@
 import type { PerfilPublico } from '@/features/auth';
 
-// Perfil del organizador tal como lo muestra su pantalla (usuarios/{uid} + campos que mantiene el backend)
 export interface PerfilOrganizador {
   uid: string;
   nombre: string;

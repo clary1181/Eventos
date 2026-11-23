@@ -4,7 +4,6 @@ import type { Periodo } from '@/features/estadisticas';
 import { obtenerDatosPlataforma, type DatosPlataforma } from '../servicios/servicioResumenAdmin';
 import { estadisticasPlataforma, resumenInicio } from '../utilidades/calculosPlataforma';
 
-// Carga los datos al recuperar el foco (al volver de revisar algo se actualizan). El periodo se aplica sin volver a consultar.
 export function useResumenAdministrador(periodo: Periodo = 'todo') {
   const [datos, setDatos] = useState<DatosPlataforma | null>(null);
   const [actualizando, setActualizando] = useState(false);

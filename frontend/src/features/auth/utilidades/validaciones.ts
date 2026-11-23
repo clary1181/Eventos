@@ -1,6 +1,3 @@
-// Cada validador devuelve un mensaje de error o '' si el valor es válido.
-// Son ayuda para el usuario; la seguridad real está en firestore.rules.
-
 const SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
 const NOMBRE_USUARIO = /^[a-zA-Z0-9_.]{3,20}$/;
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -37,7 +34,6 @@ export const validarConfirmacion = (contrasenia: string, confirmacion: string): 
   return contrasenia === confirmacion ? '' : 'Las contraseñas no coinciden.';
 };
 
-// Fecha en formato DD/MM/AAAA. Debe existir y la persona debe tener 18 años o más.
 export const validarFechaNacimiento = (valor: string): string => {
   const coincidencia = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(valor);
   if (!coincidencia) return 'Usa el formato DD/MM/AAAA.';
@@ -55,7 +51,6 @@ export const validarFechaNacimiento = (valor: string): string => {
   return edad >= 18 ? '' : 'Debes tener al menos 18 años para registrarte.';
 };
 
-// "15032000" -> "15/03/2000" (mientras la persona escribe)
 export const formatearFecha = (entrada: string): string => {
   const digitos = entrada.replace(/\D/g, '').slice(0, 8);
   if (digitos.length <= 2) return digitos;
@@ -63,7 +58,6 @@ export const formatearFecha = (entrada: string): string => {
   return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
 };
 
-// "15/03/2000" -> "2000-03-15"
 export const fechaAIso = (valor: string): string => {
   const [dia, mes, anio] = valor.split('/');
   return `${anio}-${mes}-${dia}`;

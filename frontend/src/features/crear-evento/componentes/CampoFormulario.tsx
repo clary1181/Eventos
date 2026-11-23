@@ -5,7 +5,7 @@ import { Colores } from '@/compartido/tema';
 interface Propiedades extends TextInputProps {
   etiqueta: string;
   ayuda?: string;
-  contador?: number; // límite de caracteres mostrado a la derecha
+  contador?: number;
 }
 
 export function CampoFormulario({ etiqueta, ayuda, contador, style, value, ...resto }: Propiedades) {

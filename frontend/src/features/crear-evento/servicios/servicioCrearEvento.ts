@@ -5,7 +5,6 @@ import type { DatosFormularioEvento } from '../tipos';
 import { aNumeroPrecio, limpiarTexto } from '../utilidades/validaciones';
 import { avisarAdministradores } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
-// Preset sin firma SOLO para portadas (carpeta eventos/portadas). Ver .env.example
 const PRESET_PORTADAS = process.env.EXPO_PUBLIC_CLOUDINARY_PRESET_EVENTOS ?? '';
 
 interface Organizador {
@@ -19,10 +18,9 @@ export async function crearEvento(organizador: Organizador, d: DatosFormularioEv
 
   const imagen = await subirImagen(d.fotoUri as string, PRESET_PORTADAS);
 
-  // Los campos son EXACTAMENTE los que permiten las reglas al crear (no agregar otros)
   const referencia = await addDoc(collection(db, 'eventos'), {
     organizadorId: organizador.uid,
-    organizadorNombre: `${organizador.nombre} ${organizador.apellidos}`, // las reglas lo comparan con el perfil
+    organizadorNombre: `${organizador.nombre} ${organizador.apellidos}`,
     organizadorVerificado: true,
     titulo: limpiarTexto(d.titulo),
     descripcion: limpiarTexto(d.descripcion, true),

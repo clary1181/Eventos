@@ -18,10 +18,9 @@ const aEntrada = (id: string, d: DocumentData): EntradaAsistente => ({
   eventoFechaInicio: aFecha(d.eventoFechaInicio, new Date(0)),
   lugar: String(d.lugar ?? ''),
   imagenUrl: String(d.imagenUrl ?? ''),
-  creadaEn: aFecha(d.creadaEn, new Date()), // serverTimestamp pendiente = ahora
+  creadaEn: aFecha(d.creadaEn, new Date()),
 });
 
-// Solo consulta por asistenteId (sin índices compuestos); el orden se aplica en la app
 export function escucharMisEntradas(uid: string, alCambiar: (l: EntradaAsistente[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'entradas'), where('asistenteId', '==', uid)),

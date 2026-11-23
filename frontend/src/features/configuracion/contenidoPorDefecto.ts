@@ -1,6 +1,5 @@
 import type { ItemContenido } from './servicios/servicioContenido';
 
-// Textos iniciales. Se usan mientras el administrador no haya guardado su propia versión en Firestore.
 export const AYUDA_POR_DEFECTO: ItemContenido[] = [
   { titulo: '¿Cómo funciona la compra de entradas?', texto: 'La compra es una simulación: eliges la cantidad, capturas datos de pago de prueba y se generan tus entradas. No se cobra dinero real ni se guarda información de tu tarjeta.' },
   { titulo: '¿Cuántas entradas puedo comprar por evento?', texto: 'Hasta 5 por persona en cada evento, siempre que haya cupo disponible.' },

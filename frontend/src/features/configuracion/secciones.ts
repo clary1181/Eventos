@@ -8,7 +8,6 @@ export const RUTA_PERFIL: Record<Rol, string> = {
   administrador: '/administrador/perfil',
 };
 
-// Secciones propias de cada rol. Solo accesos a pantallas que ya existen.
 export const seccionesPorRol = (rol: Rol, ir: (ruta: string) => void): SeccionConfig[] => {
   if (rol === 'asistente') {
     return [{

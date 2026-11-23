@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { escucharCalificacionesOrganizador, escucharEntradasOrganizador } from '../servicios/servicioEstadisticas';
 import type { CalificacionResumen, EntradaResumen } from '../tipos';
 
-// Entradas vendidas y calificaciones del organizador, en tiempo real
 export function useDatosOrganizador(uid: string | undefined) {
   const [entradas, setEntradas] = useState<EntradaResumen[]>([]);
   const [calificaciones, setCalificaciones] = useState<CalificacionResumen[]>([]);

@@ -1,4 +1,3 @@
-// API pública de la feature "eventos"
 export { TarjetaEvento } from './componentes/TarjetaEvento';
 export { InsigniaEstadoEvento } from './componentes/InsigniaEstadoEvento';
 export { useEventosOrganizador } from './hooks/useEventosOrganizador';

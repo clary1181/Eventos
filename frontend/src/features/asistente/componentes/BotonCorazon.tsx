@@ -6,7 +6,7 @@ interface Propiedades {
   activo: boolean;
   alPulsar: () => void;
   tamano?: number;
-  traslucido?: boolean; // sobre una foto oscura (detalle)
+  traslucido?: boolean;
 }
 
 export function BotonCorazon({ activo, alPulsar, tamano = 36, traslucido = false }: Propiedades) {

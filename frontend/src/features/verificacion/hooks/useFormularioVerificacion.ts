@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { sanitizarTexto } from '@/compartido/utilidades/sanitizar';
 import { elegirFotoConOrigen, tomarFoto } from '@/compartido/utilidades/seleccionarImagen';
 import { enviarSolicitud } from '../servicios/servicioVerificacion';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import type { SolicitudVerificacion } from '../tipos';
 import { extraerInstagram, normalizarSitioWeb, soloDigitos, telefonoValido } from '../utilidades/validaciones';
 
@@ -18,7 +18,6 @@ export interface ErroresVerificacion {
   terminos?: string;
 }
 
-// Estado y acciones del formulario de verificación (si hay una solicitud devuelta, se precarga)
 export function useFormularioVerificacion(uid: string, previa: SolicitudVerificacion | null) {
   const [telefono, establecerTelefono] = useState('');
   const [instagram, establecerInstagram] = useState('');
@@ -29,6 +28,7 @@ export function useFormularioVerificacion(uid: string, previa: SolicitudVerifica
   const [terminos, establecerTerminos] = useState(false);
   const [errores, establecerErrores] = useState<ErroresVerificacion>({});
   const [enviando, establecerEnviando] = useState(false);
+  const enviandoRef = useRef(false);
   const precargado = useRef(false);
 
   useEffect(() => {
@@ -102,9 +102,11 @@ export function useFormularioVerificacion(uid: string, previa: SolicitudVerifica
   };
 
   const enviar = async (alTerminar: () => void) => {
+    if (enviandoRef.current) return;
     const { validos, usuarioInstagram, web } = validar();
     if (!validos || !selfie || !identificacion) return;
 
+    enviandoRef.current = true;
     establecerEnviando(true);
     try {
       await enviarSolicitud(
@@ -119,9 +121,7 @@ export function useFormularioVerificacion(uid: string, previa: SolicitudVerifica
         },
         previa,
       );
-      Alert.alert('Solicitud enviada', 'Un administrador revisará tu información. Verás aquí el resultado.', [
-        { text: 'Entendido', onPress: alTerminar },
-      ]);
+      mostrarAviso({ titulo: 'Solicitud enviada', mensaje: 'Un administrador revisará tu información. Verás aquí el resultado.', tipo: 'exito', alAceptar: alTerminar });
     } catch (error) {
       const codigo = (error as { code?: string }).code;
       const mensaje =
@@ -132,9 +132,10 @@ export function useFormularioVerificacion(uid: string, previa: SolicitudVerifica
             : error instanceof Error && error.message.startsWith('Falta configurar')
               ? error.message
               : 'No se pudo enviar la solicitud. Revisa tu conexión e inténtalo de nuevo.';
-      Alert.alert('No se pudo enviar', mensaje);
+      mostrarAviso({ titulo: 'No se pudo enviar', mensaje, tipo: 'error' });
     } finally {
       establecerEnviando(false);
+      enviandoRef.current = false;
     }
   };
 

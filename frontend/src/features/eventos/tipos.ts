@@ -5,7 +5,6 @@ export type EstadoEvento =
   | 'rechazado'
   | 'suspendido';
 
-// Documento eventos/{id} (ver docs/modelo-datos.md, sección 3.5)
 export interface Evento {
   id: string;
   organizadorId: string;

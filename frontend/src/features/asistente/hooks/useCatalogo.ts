@@ -21,7 +21,6 @@ export function useCatalogo() {
     []
   );
 
-  // Eventos que aún no terminan, del más próximo al más lejano
   const vigentes = useMemo(() => {
     const ahora = Date.now();
     return todos.filter((e) => e.fechaFin.getTime() > ahora).sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime());
@@ -39,7 +38,6 @@ export function useCatalogo() {
     });
   }, [vigentes, busqueda, categoria]);
 
-  // Organizadores (con eventos publicados) cuyo nombre coincide con la búsqueda
   const organizadores = useMemo<OrganizadorEncontrado[]>(() => {
     const texto = normalizar(busqueda.trim());
     if (texto === '') return [];
@@ -53,7 +51,6 @@ export function useCatalogo() {
     return [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)).slice(0, 6);
   }, [todos, busqueda]);
 
-  // Destacado: el evento con más entradas vendidas (a igualdad, el más próximo). Solo sin búsqueda ni filtro.
   const destacado = useMemo(() => {
     if (filtrando) return null;
     return vigentes.reduce<EventoPublico | null>((mejor, e) => (!mejor || e.vendidas > mejor.vendidas ? e : mejor), null);

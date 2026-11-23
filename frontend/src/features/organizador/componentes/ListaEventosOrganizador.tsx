@@ -18,7 +18,6 @@ type Propiedades = {
   alCrear: () => void;
 };
 
-// Lista de eventos del organizador con sus estados de carga, error y vacío
 export function ListaEventosOrganizador({ eventos, cargando, error, limite, compacta, acciones, alPresionarEvento, alCrear }: Propiedades) {
   const { perfil } = usePerfilOrganizador();
 

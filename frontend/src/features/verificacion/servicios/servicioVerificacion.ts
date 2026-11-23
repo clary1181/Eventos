@@ -4,10 +4,10 @@ import { Cloudinary } from '@/config/cloudinary';
 import { subirImagen } from '@/infraestructura/cloudinary';
 import type { DatosVerificacion, DocumentoSubido, SolicitudVerificacion } from '../tipos';
 import { esUrlRemota } from '../utilidades/validaciones';
+import { avisarAdministradores } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
 const aFecha = (valor: unknown) => (valor instanceof Timestamp ? valor.toDate() : undefined);
 
-// Escucha la solicitud del organizador (solicitudesVerificacion/{uid}); null si aún no envió ninguna
 export const escucharSolicitud = (
   uid: string,
   alCambiar: (solicitud: SolicitudVerificacion | null) => void,
@@ -34,14 +34,11 @@ export const escucharSolicitud = (
     alError,
   );
 
-// Si la imagen ya estaba subida (reenvío) se reutiliza; si es local, se sube a Cloudinary
 const subirSiHaceFalta = (imagen: string, anterior?: DocumentoSubido): Promise<DocumentoSubido> =>
   esUrlRemota(imagen) && anterior?.url === imagen
     ? Promise.resolve(anterior)
     : subirImagen(imagen, Cloudinary.presetVerificacion);
 
-// Envía la solicitud por primera vez (create) o la reenvía tras una corrección (update).
-// Las reglas de Firestore validan los campos; el trigger del backend sincroniza el perfil.
 export async function enviarSolicitud(uid: string, datos: DatosVerificacion, previa: SolicitudVerificacion | null) {
   const [selfie, identificacion] = await Promise.all([
     subirSiHaceFalta(datos.selfie, previa?.documentos.selfie),
@@ -76,8 +73,6 @@ export async function enviarSolicitud(uid: string, datos: DatosVerificacion, pre
     });
   }
 
-  // Con la solicitud ya enviada, el contacto se copia al perfil para que se vea en "Perfil".
-  // Es secundario: si falla, la solicitud no se ve afectada.
   try {
     const redesPerfil: Record<string, string> = {};
     if (datos.instagram) redesPerfil.instagram = datos.instagram;
@@ -89,4 +84,13 @@ export async function enviarSolicitud(uid: string, datos: DatosVerificacion, pre
   } catch (error) {
     console.warn('No se pudo copiar el contacto al perfil:', error);
   }
+
+  await avisarAdministradores({
+    tipo: 'verificacion_nueva',
+    titulo: previa ? 'Verificación reenviada' : 'Nueva solicitud de verificación',
+    mensaje: previa
+      ? 'Un organizador corrigió y reenvió su solicitud de verificación.'
+      : 'Un organizador envió una nueva solicitud de verificación.',
+    ruta: '/administrador/organizadores',
+  });
 }

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentRef } from 'react';
 import { Keyboard, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, TextInput } from 'react-native';
 
-// Evita que el teclado tape el campo que se está escribiendo
 export function useTecladoScroll(margen = 24) {
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const scrollY = useRef(0);
@@ -34,9 +33,9 @@ export function useTecladoScroll(margen = 24) {
   return {
     scrollRef,
     alScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => { scrollY.current = e.nativeEvent.contentOffset.y; },
-    // Se llama al enfocar otro campo con el teclado ya abierto
+
     alEnfocar: () => { setTimeout(asegurarVisible, 120); },
-    // Espacio extra al final para poder desplazar hasta el último campo (en iOS lo resuelve KeyboardAvoidingView)
+
     rellenoTeclado: Platform.OS === 'android' ? altoTeclado : 0,
   };
 }

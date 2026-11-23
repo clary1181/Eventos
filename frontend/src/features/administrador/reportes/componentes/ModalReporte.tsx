@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colores } from '@/compartido/tema';
 import { TITULO_MOTIVO, type AccionReporte, type ContextoReporte, type ReporteAdmin } from '../tipos';
@@ -21,6 +22,7 @@ const Dato = ({ etiqueta, valor }: { etiqueta: string; valor: string }) => (
 );
 
 export function ModalReporte({ reporte: r, contexto, procesando, alCerrar, alResolver }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const [nota, setNota] = useState('');
   const [error, setError] = useState('');
   useEffect(() => { setNota(''); setError(''); }, [r?.id]);
@@ -36,9 +38,9 @@ export function ModalReporte({ reporte: r, contexto, procesando, alCerrar, alRes
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={alCerrar}>
-      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={estilos.fondo} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Pressable style={{ flex: 1 }} onPress={alCerrar} />
-        <View style={estilos.hoja}>
+        <View style={[estilos.hoja, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
           <View style={estilos.cabecera}>
             <Text style={estilos.titulo}>Reporte</Text>
             <Pressable onPress={alCerrar} hitSlop={10} accessibilityLabel="Cerrar"><Ionicons name="close" size={28} color={Colores.primarioOscuro} /></Pressable>

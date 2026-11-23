@@ -1,9 +1,8 @@
-// Paleta blanco + morado de la app
 export const Colores = {
   fondo: '#FFFFFF',
   fondoSuave: '#F6F2FD',
-  primario: '#5E1F9C',        // botones y enlaces
-  primarioOscuro: '#2A1560',  // títulos e iconos
+  primario: '#5E1F9C',
+  primarioOscuro: '#2A1560',
   primarioMedio: '#7B3FC4',
   primarioClaro: '#E9DFFA',
   acento: '#B9A3E8',
@@ -13,10 +12,9 @@ export const Colores = {
   textoSobrePrimario: '#FFFFFF',
   error: '#C62828',
   exito: '#2E7D32',
-  superposicionHero: 'rgba(72, 27, 140, 0.60)', // tinte morado sobre la foto
+  superposicionHero: 'rgba(72, 27, 140, 0.60)',
   fondoModal: 'rgba(20, 8, 45, 0.5)',
 
-  // Estados y fondos suaves (insignias, métricas, avisos)
   exitoTexto: '#1B7F3B',
   exitoFondo: '#E4F4E7',
   advertencia: '#B4530A',

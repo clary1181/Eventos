@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { estilos } from './ModalCentrado.estilos';
 
 type Propiedades = {
@@ -8,16 +9,25 @@ type Propiedades = {
   children: ReactNode;
 };
 
-// Ventana emergente centrada. Se cierra al tocar fuera o con el botón "atrás" de Android.
 export function ModalCentrado({ visible, alCerrar, children }: Propiedades) {
+  const inset = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={alCerrar}>
-      <Pressable style={estilos.fondo} onPress={alCerrar}>
-        {/* Este Pressable interno evita que tocar la tarjeta cierre el modal */}
-        <Pressable style={estilos.tarjeta} onPress={() => undefined}>
-          <View>{children}</View>
-        </Pressable>
-      </Pressable>
+      <KeyboardAvoidingView
+        style={[estilos.fondo, { paddingTop: inset.top + 12, paddingBottom: inset.bottom + 12 }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Pressable style={estilos.fondoPresion} onPress={alCerrar} />
+        <View style={[estilos.tarjeta, { maxHeight: '88%' }]}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={estilos.contenido}
+          >
+            {children}
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

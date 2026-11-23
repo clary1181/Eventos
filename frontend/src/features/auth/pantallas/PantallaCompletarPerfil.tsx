@@ -12,7 +12,6 @@ import { useCompletarPerfilGoogle } from '../hooks/useCompletarPerfilGoogle';
 import { useTecladoScroll } from '../hooks/useTecladoScroll';
 import { estilos } from './PantallaRegistro.estilos';
 
-// Primera vez con Google: faltan los datos que pide el registro normal
 export function PantallaCompletarPerfil() {
   const c = useCompletarPerfilGoogle();
   const fuentesListas = useFuentes();
@@ -22,7 +21,7 @@ export function PantallaCompletarPerfil() {
   if (!fuentesListas) return <View style={{ flex: 1, backgroundColor: Colores.fondo }} />;
 
   return (
-    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         ref={teclado.scrollRef}
         onScroll={teclado.alScroll}
@@ -39,9 +38,9 @@ export function PantallaCompletarPerfil() {
           <Text style={estilos.titulo}>Completa tu perfil</Text>
           <Text style={estilos.subtitulo}>Cuenta de Google: {c.correo}</Text>
 
-          <CampoTexto icono="person-outline" placeholder="Nombre(s)" value={c.valores.nombre} onChangeText={(t) => c.cambiar('nombre', t)} onFocus={teclado.alEnfocar} error={c.errores.nombre} autoCapitalize="words" />
-          <CampoTexto icono="people-outline" placeholder="Apellido paterno" value={c.valores.apellidoPaterno} onChangeText={(t) => c.cambiar('apellidoPaterno', t)} onFocus={teclado.alEnfocar} error={c.errores.apellidoPaterno} autoCapitalize="words" />
-          <CampoTexto icono="people-outline" placeholder="Apellido materno" value={c.valores.apellidoMaterno} onChangeText={(t) => c.cambiar('apellidoMaterno', t)} onFocus={teclado.alEnfocar} error={c.errores.apellidoMaterno} autoCapitalize="words" />
+          <CampoTexto icono="person-outline" placeholder="Nombre(s)" value={c.valores.nombre} onChangeText={(t) => c.cambiar('nombre', t)} onFocus={teclado.alEnfocar} error={c.errores.nombre} autoCapitalize="words" maxLength={40} />
+          <CampoTexto icono="people-outline" placeholder="Apellido paterno" value={c.valores.apellidoPaterno} onChangeText={(t) => c.cambiar('apellidoPaterno', t)} onFocus={teclado.alEnfocar} error={c.errores.apellidoPaterno} autoCapitalize="words" maxLength={40} />
+          <CampoTexto icono="people-outline" placeholder="Apellido materno" value={c.valores.apellidoMaterno} onChangeText={(t) => c.cambiar('apellidoMaterno', t)} onFocus={teclado.alEnfocar} error={c.errores.apellidoMaterno} autoCapitalize="words" maxLength={40} />
 
           <CampoSelector
             icono="calendar-outline"
@@ -51,7 +50,7 @@ export function PantallaCompletarPerfil() {
           {!!c.errores.fechaNacimiento && <Text style={estilos.errorFecha}>{c.errores.fechaNacimiento}</Text>}
 
           <CampoSelector icono="location-outline" valor={c.valores.ciudad} onPress={c.abrirCiudades} />
-          <CampoTexto icono="at-outline" placeholder="Nombre de usuario" value={c.valores.nombreUsuario} onChangeText={(t) => c.cambiar('nombreUsuario', t)} onFocus={teclado.alEnfocar} error={c.errores.nombreUsuario} autoCapitalize="none" />
+          <CampoTexto icono="at-outline" placeholder="Nombre de usuario" value={c.valores.nombreUsuario} onChangeText={(t) => c.cambiar('nombreUsuario', t)} onFocus={teclado.alEnfocar} error={c.errores.nombreUsuario} autoCapitalize="none" maxLength={20} />
 
           <SelectorRol valor={c.valores.rol} alCambiar={(rol) => c.cambiar('rol', rol)} />
 

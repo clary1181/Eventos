@@ -1,9 +1,7 @@
-// Validación y formato de la tarjeta del PAGO SIMULADO. Estos datos nunca salen del teléfono.
-
 export interface DatosTarjeta {
   titular: string;
-  numero: string; // con espacios, como se escribe
-  vencimiento: string; // MM/AA
+  numero: string;
+  vencimiento: string;
   cvv: string;
 }
 export type ErroresTarjeta = Partial<Record<keyof DatosTarjeta, string>>;
@@ -28,7 +26,6 @@ export function marcaTarjeta(numero: string): string {
   return 'Tarjeta';
 }
 
-// Algoritmo de Luhn: lo usan las tarjetas reales para detectar errores de captura
 function luhnValido(numero: string): boolean {
   let suma = 0;
   let doble = false;

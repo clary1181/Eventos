@@ -11,7 +11,7 @@ interface Propiedades {
   total: number;
   promedio: number;
   mia: Calificacion | null;
-  puedeCalificar: boolean; // evento terminado + tiene entrada + aún no califica
+  puedeCalificar: boolean;
   alCalificar: () => void;
 }
 

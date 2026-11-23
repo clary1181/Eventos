@@ -34,7 +34,6 @@ export interface CalificacionAdmin {
   creadaEn: Date | null;
 }
 
-// Datos extra que se cargan al abrir un reporte
 export interface ContextoReporte {
   reportante: string;
   organizador: string;

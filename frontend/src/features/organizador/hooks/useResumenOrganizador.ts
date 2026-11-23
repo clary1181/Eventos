@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { Evento } from '@/features/eventos';
 
-// Totales acumulados de los eventos del organizador (el filtro por periodo llega con las Functions)
 export function useResumenOrganizador(eventos: Evento[]) {
   return useMemo(() => {
     const ahora = Date.now();

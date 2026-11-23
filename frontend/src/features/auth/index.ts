@@ -1,4 +1,3 @@
-// API pública de la feature "auth": lo único que otras partes de la app deben importar
 export { SesionProvider } from './contexto/SesionProvider';
 export { useSesion } from './hooks/useSesion';
 export { cerrarSesion } from './servicios/servicioAuth';

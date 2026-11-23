@@ -33,14 +33,13 @@ export function PantallaInicioOrganizador() {
   const estadoVerificacion = useEstadoVerificacion(perfil?.uid, perfil?.estadoVerificacion);
   const [periodo, setPeriodo] = useState<Periodo>('todo');
   const datos = useDatosOrganizador(perfil?.uid);
-  // "Acumulado" usa los totales de los eventos; 7 y 30 días se calculan con la fecha de cada compra
   const delPeriodo = periodo === 'todo' || datos.cargando ? null : calcularResumen(eventos, datos.entradas, [], periodo);
 
   if (!perfil) return null;
   const ir = (ruta: string) => router.push(ruta as Href);
   const editar = (evento: Evento) => {
-    if (evento.estado !== 'pendiente_aprobacion' && evento.estado !== 'requiere_correccion' && evento.estado !== 'aprobado') {
-      avisarProximamente('La edición de eventos rechazados o suspendidos');
+    if (!['pendiente_aprobacion', 'requiere_correccion', 'aprobado', 'rechazado', 'suspendido'].includes(evento.estado)) {
+      avisarProximamente('La edición de este evento');
       return;
     }
     ir(`/organizador/editar-evento?id=${evento.id}`);
@@ -59,7 +58,7 @@ export function PantallaInicioOrganizador() {
               </>
             }
           />
-          <Text style={estilos.saludo} numberOfLines={1}>Hola, {perfil.nombre} 👋</Text>
+          <Text style={estilos.saludo} numberOfLines={1}>Hola, {perfil.nombre}</Text>
           <Text style={estilos.subtitulo}>Gestiona tus eventos, entradas y reportes desde un solo lugar.</Text>
         </View>
       </FondoHero>

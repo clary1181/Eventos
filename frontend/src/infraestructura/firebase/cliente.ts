@@ -10,7 +10,6 @@ if (!Entorno.firebase.projectId) {
 
 const app = getApps().length ? getApp() : initializeApp(Entorno.firebase);
 
-// getReactNativePersistence no siempre aparece en los tipos públicos, por eso se carga con require
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getReactNativePersistence } = require('firebase/auth');
 
@@ -18,7 +17,7 @@ function crearAuth(): Auth {
   try {
     return initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
   } catch {
-    // En recarga rápida (fast refresh) Auth ya estaba inicializado
+
     return getAuth(app);
   }
 }
@@ -27,7 +26,6 @@ export const auth = crearAuth();
 export const db = getFirestore(app);
 export { app };
 
-// Conexión a emuladores (solo desarrollo). La marca evita conectar dos veces al recargar.
 const ambiente = globalThis as typeof globalThis & { __emuladoresConectados?: boolean };
 if (Entorno.usarEmuladores && !ambiente.__emuladoresConectados) {
   connectAuthEmulator(auth, `http://${Entorno.hostEmuladores}:9099`, { disableWarnings: true });

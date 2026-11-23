@@ -13,9 +13,8 @@ import { usePerfilOrganizador } from '../contexto/PerfilOrganizadorContexto';
 import { useAccionCrearEvento } from '../hooks/useAccionCrearEvento';
 import { estilos } from './PantallaMisEventos.estilos';
 
-// Se pueden editar los eventos por corregir, en revisión y los ya publicados (reglas de Firestore)
-const esEditable = (evento: Evento) =>
-  evento.estado === 'pendiente_aprobacion' || evento.estado === 'requiere_correccion' || evento.estado === 'aprobado';
+const ESTADOS_EDITABLES = ['pendiente_aprobacion', 'requiere_correccion', 'aprobado', 'rechazado', 'suspendido'];
+const esEditable = (evento: Evento) => ESTADOS_EDITABLES.includes(evento.estado);
 
 export function PantallaMisEventos() {
   useBarraEstado('dark');
@@ -28,7 +27,7 @@ export function PantallaMisEventos() {
 
   const editar = (evento: Evento) => {
     if (!esEditable(evento)) {
-      avisarProximamente('La edición de eventos rechazados o suspendidos');
+      avisarProximamente('La edición de este evento');
       return;
     }
     router.push(`/organizador/editar-evento?id=${evento.id}` as Href);

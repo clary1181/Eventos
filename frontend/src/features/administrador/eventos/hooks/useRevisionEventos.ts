@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import { aprobarCambios, dictaminarEvento, escucharEventos, rechazarCambios } from '../servicios/servicioRevisionEventos';
 import type { EventoAdmin, PestanaEventoId } from '../tipos';
 
@@ -29,7 +29,6 @@ export function useRevisionEventos() {
     return c;
   }, [eventos]);
 
-  // Pendientes: el más antiguo primero (cola); el resto: el más reciente primero
   const lista = useMemo(() => {
     const t = (d: Date | null) => d?.getTime() ?? 0;
     if (pestana === 'cambios') {
@@ -48,7 +47,7 @@ export function useRevisionEventos() {
     async (estado: 'aprobado' | 'requiere_correccion' | 'rechazado', texto: string) => {
       if (!seleccionado) return;
       if (estado !== 'aprobado' && texto.trim().length === 0) {
-        Alert.alert('Texto requerido', estado === 'rechazado' ? 'Escribe el motivo del rechazo.' : 'Indica qué debe corregir el organizador.');
+        mostrarAviso({ titulo: 'Texto requerido', mensaje: estado === 'rechazado' ? 'Escribe el motivo del rechazo.' : 'Indica qué debe corregir el organizador.', tipo: 'error' });
         return;
       }
       setProcesando(true);
@@ -57,7 +56,7 @@ export function useRevisionEventos() {
         setSeleccionadoId(null);
       } catch (e) {
         console.error('Error al dictaminar el evento:', e);
-        Alert.alert('Error', 'No se pudo guardar la decisión. Revisa tu conexión e inténtalo de nuevo.');
+        mostrarAviso({ titulo: 'Error', mensaje: 'No se pudo guardar la decisión. Revisa tu conexión e inténtalo de nuevo.', tipo: 'error' });
       } finally {
         setProcesando(false);
       }
@@ -69,7 +68,7 @@ export function useRevisionEventos() {
     async (accion: 'aprobar' | 'rechazar', texto: string) => {
       if (!seleccionado) return;
       if (accion === 'rechazar' && texto.trim().length === 0) {
-        Alert.alert('Texto requerido', 'Escribe el motivo por el que rechazas los cambios.');
+        mostrarAviso({ titulo: 'Texto requerido', mensaje: 'Escribe el motivo por el que rechazas los cambios.', tipo: 'error' });
         return;
       }
       setProcesando(true);
@@ -79,7 +78,7 @@ export function useRevisionEventos() {
         setSeleccionadoId(null);
       } catch (e) {
         console.error('Error al resolver los cambios:', e);
-        Alert.alert('Error', 'No se pudo guardar la decisión. Revisa tu conexión y que hayas publicado las reglas nuevas.');
+        mostrarAviso({ titulo: 'Error', mensaje: 'No se pudo guardar la decisión. Revisa tu conexión y que hayas publicado las reglas nuevas.', tipo: 'error' });
       } finally {
         setProcesando(false);
       }

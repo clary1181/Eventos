@@ -16,7 +16,6 @@ export const desdePeriodo = (p: Periodo, ahora: number) => {
 
 export const NOMBRE_PERIODO: Record<Periodo, string> = { '7d': 'Últimos 7 días', '30d': 'Últimos 30 días', todo: 'Todo el tiempo' };
 
-// Serie diaria de n días a partir de "inicio" (una barra por día)
 function serieDiaria(entradas: EntradaResumen[], inicio: Date, n: number, etiquetaCorta: boolean): PuntoVenta[] {
   const puntos: PuntoVenta[] = Array.from({ length: n }, (_, i) => {
     const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
@@ -30,7 +29,6 @@ function serieDiaria(entradas: EntradaResumen[], inicio: Date, n: number, etique
   return puntos;
 }
 
-// Ventas del organizador: 7 o 30 días en barras diarias; "todo" agrupa por mes (últimos 6)
 export function serieVentas(entradas: EntradaResumen[], periodo: Periodo, ahora: number): PuntoVenta[] {
   const hoy = new Date(ahora);
   if (periodo === 'todo') {
@@ -46,7 +44,6 @@ export function serieVentas(entradas: EntradaResumen[], periodo: Periodo, ahora:
   return serieDiaria(entradas, new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - (n - 1)), n, periodo === '7d');
 }
 
-// Ventas de un evento: desde la primera venta (máx. 30 días atrás) hasta hoy
 export function serieEvento(entradas: EntradaResumen[], ahora: number): PuntoVenta[] {
   if (entradas.length === 0) return [];
   const hoy = new Date(ahora);
@@ -58,8 +55,8 @@ export function serieEvento(entradas: EntradaResumen[], ahora: number): PuntoVen
 export interface ResumenGeneral {
   ingresos: number;
   entradas: number;
-  asistencia: number | null;   // 0..1, solo eventos ya finalizados
-  ocupacion: number | null;    // 0..1, vendidas / capacidad de los eventos publicados
+  asistencia: number | null;
+  ocupacion: number | null;
   activos: number;
   promedio: number | null;
   totalCalificaciones: number;
@@ -85,7 +82,6 @@ export function calcularResumen(eventos: Evento[], entradas: EntradaResumen[], c
 
 export interface RendimientoEvento { evento: Evento; vendidas: number; ingresos: number; usadas: number }
 
-// Una fila por evento con ventas o publicado, del que más ingresos genera al que menos
 export function rendimientoPorEvento(eventos: Evento[], entradas: EntradaResumen[]): RendimientoEvento[] {
   const porEvento = new Map<string, EntradaResumen[]>();
   entradas.forEach((e) => porEvento.set(e.eventoId, [...(porEvento.get(e.eventoId) ?? []), e]));

@@ -10,3 +10,4 @@ export { FondoHero } from './FondoHero';
 export { IconoTicket } from './IconoTicket';
 export { PantallaEnConstruccion } from './PantallaEnConstruccion';
 export { PestanasSegmentadas } from './PestanasSegmentadas';
+export { AvisosProvider, mostrarAviso, useAviso } from '../avisos/AvisosProvider';

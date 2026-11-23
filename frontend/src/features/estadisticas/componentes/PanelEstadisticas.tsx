@@ -20,7 +20,6 @@ interface Propiedades {
   alAbrirEvento: (e: Evento) => void;
 }
 
-// Contenido de estadísticas del organizador (se usa en la pestaña Estadísticas y en su perfil)
 export function PanelEstadisticas({ eventos, entradas, calificaciones, cargando, error, alAbrirEvento }: Propiedades) {
   const [periodo, setPeriodo] = useState<Periodo>('30d');
   const ahora = Date.now();

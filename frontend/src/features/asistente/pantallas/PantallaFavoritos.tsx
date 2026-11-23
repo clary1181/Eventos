@@ -8,7 +8,7 @@ import { useSesion } from '@/features/auth';
 import { TarjetaEventoAsistente } from '../componentes/TarjetaEventoAsistente';
 import { useBarraEstadoAsistente } from '../hooks/useBarraEstadoAsistente';
 import { useEventosFavoritos } from '../hooks/useEventosFavoritos';
-import { estilos } from './PantallaMisEntradas.estilos'; // mismo encabezado y lista que "Mis eventos"
+import { estilos } from './PantallaMisEntradas.estilos';
 
 export function PantallaFavoritos() {
   useBarraEstadoAsistente('light');

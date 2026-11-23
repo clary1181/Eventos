@@ -1,4 +1,3 @@
-// Una entrada comprada (colección "entradas")
 export interface EntradaAsistente {
   id: string;
   eventoId: string;
@@ -18,7 +17,6 @@ export interface EntradaAsistente {
 
 export type EstadoEntrada = 'valida' | 'usada' | 'vencida';
 
-// El QR se acepta desde 2 horas antes hasta 6 horas después del inicio (lo valida el organizador al escanear)
 export const ANTES_INICIO_MS = 2 * 60 * 60 * 1000;
 export const DESPUES_INICIO_MS = 6 * 60 * 60 * 1000;
 
@@ -32,5 +30,4 @@ export function estadoEntrada(e: EntradaAsistente, ahora = Date.now()): EstadoEn
   return ahora > ventanaQR(e.eventoFechaInicio).hasta.getTime() ? 'vencida' : 'valida';
 }
 
-// Contenido del QR: MREV|idEntrada|idEvento|token
 export const construirPayloadQR = (e: Pick<EntradaAsistente, 'id' | 'eventoId' | 'token'>) => `MREV|${e.id}|${e.eventoId}|${e.token}`;

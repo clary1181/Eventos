@@ -2,7 +2,6 @@ import { doc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
 import { DatosRegistro, PerfilPublico } from '../tipos';
 
-// Lee el perfil público: usuarios/{uid}
 export const obtenerPerfil = async (uid: string): Promise<PerfilPublico | null> => {
   const instantanea = await getDoc(doc(db, 'usuarios', uid));
   if (!instantanea.exists()) return null;
@@ -22,16 +21,12 @@ export const obtenerPerfil = async (uid: string): Promise<PerfilPublico | null> 
   };
 };
 
-// nombresUsuario/{nombre en minúsculas} existe si el nombre ya está tomado.
-// Requiere sesión iniciada (así lo piden las reglas).
 export const nombreUsuarioDisponible = async (nombreUsuario: string): Promise<boolean> => {
   const clave = nombreUsuario.trim().toLowerCase();
   const instantanea = await getDoc(doc(db, 'nombresUsuario', clave));
   return !instantanea.exists();
 };
 
-// Escribe en UN SOLO lote los tres documentos que exigen las reglas:
-// nombresUsuario/{nombre}, usuarios/{uid} y usuarios/{uid}/privado/perfil
 export const crearPerfilCompleto = async (
   uid: string,
   correo: string,

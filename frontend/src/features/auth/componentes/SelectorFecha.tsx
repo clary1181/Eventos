@@ -11,7 +11,6 @@ const ANIOS_ATRAS = 100;
 
 const dos = (n: number) => String(n).padStart(2, '0');
 
-// Lee "DD/MM/AAAA"; devuelve null si está incompleta
 const leer = (texto: string) => {
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
   return m ? { dia: Number(m[1]), mes: Number(m[2]) - 1, anio: Number(m[3]) } : null;
@@ -19,12 +18,11 @@ const leer = (texto: string) => {
 
 interface Props {
   visible: boolean;
-  valor: string; // DD/MM/AAAA o vacío
+  valor: string;
   alCerrar: () => void;
-  alElegir: (fecha: string) => void; // devuelve DD/MM/AAAA
+  alElegir: (fecha: string) => void;
 }
 
-// Calendario pequeño para elegir fecha de nacimiento (no permite fechas futuras)
 export function SelectorFecha({ visible, valor, alCerrar, alElegir }: Props) {
   const hoy = new Date();
   const anioHoy = hoy.getFullYear();
@@ -35,7 +33,6 @@ export function SelectorFecha({ visible, valor, alCerrar, alElegir }: Props) {
   const [mes, establecerMes] = useState(0);
   const [verAnios, establecerVerAnios] = useState(false);
 
-  // Al abrir, se posiciona en la fecha ya elegida (o en 20 años atrás)
   useEffect(() => {
     if (!visible) return;
     const actual = leer(valor);
@@ -57,7 +54,6 @@ export function SelectorFecha({ visible, valor, alCerrar, alElegir }: Props) {
     establecerAnio(a);
   };
 
-  // Celdas del mes: huecos iniciales (semana empieza en lunes) + días
   const huecos = (new Date(anio, mes, 1).getDay() + 6) % 7;
   const totalDias = new Date(anio, mes + 1, 0).getDate();
   const celdas: (number | null)[] = [...Array(huecos).fill(null), ...Array.from({ length: totalDias }, (_, i) => i + 1)];

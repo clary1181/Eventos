@@ -15,7 +15,6 @@ const ETIQUETA_DOCUMENTO: Record<string, string> = {
 const aFecha = (valor: unknown): Date | null =>
   valor && typeof (valor as { toDate?: unknown }).toDate === 'function' ? (valor as { toDate: () => Date }).toDate() : null;
 
-// Las redes pueden guardarse como texto o como objeto {url|valor|usuario}; se muestran como texto
 const redATexto = (red: unknown): string => {
   if (typeof red === 'string') return red;
   if (red && typeof red === 'object') {
@@ -35,7 +34,6 @@ const aDocumentos = (valor: unknown): DocumentoAdmin[] => {
     .filter((d) => d.url !== '');
 };
 
-// Escucha TODAS las solicitudes (solo el administrador puede listarlas según las reglas)
 export function escucharSolicitudes(
   alCambiar: (lista: SolicitudAdmin[]) => void,
   alError: (error: Error) => void
@@ -88,7 +86,6 @@ export async function obtenerPerfilResumido(uid: string): Promise<PerfilResumido
   }
 }
 
-// Solo toca los campos que las reglas permiten al administrador
 export async function resolverSolicitud(
   uidOrganizador: string,
   nuevoEstado: Exclude<EstadoSolicitud, 'pendiente'>,
@@ -110,6 +107,6 @@ export async function resolverSolicitud(
     mensaje: nuevoEstado === 'aprobada'
       ? 'Ya puedes crear y publicar eventos.'
       : `Tu solicitud fue ${nuevoEstado === 'rechazada' ? 'rechazada' : 'devuelta con observaciones'}: ${observaciones.trim()}`,
-    ruta: '/organizador/inicio',
+    ruta: '/organizador/verificacion',
   });
 }

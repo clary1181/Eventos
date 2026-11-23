@@ -5,7 +5,6 @@ export interface DocumentoSubido {
   publicId: string;
 }
 
-// Documento solicitudesVerificacion/{uid} (ver docs/modelo-datos.md, sección 3.4)
 export interface SolicitudVerificacion {
   organizadorId: string;
   estado: EstadoSolicitud;
@@ -19,11 +18,10 @@ export interface SolicitudVerificacion {
   actualizadaEn?: Date;
 }
 
-// Lo que captura el formulario, ya validado. Las imágenes son rutas locales o URLs ya subidas.
 export interface DatosVerificacion {
-  telefono: string;          // 10 dígitos
-  instagram: string | null;  // solo el usuario, sin @
-  sitioWeb: string | null;   // URL completa
+  telefono: string;
+  instagram: string | null;
+  sitioWeb: string | null;
   descripcionActividad: string;
   selfie: string;
   identificacion: string;

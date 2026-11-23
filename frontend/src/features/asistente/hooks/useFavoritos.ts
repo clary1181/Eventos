@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { alternarFavorito, escucharFavoritos } from '../servicios/servicioFavoritos';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
 export function useFavoritos(uid: string | undefined) {
   const [ids, setIds] = useState<Set<string>>(new Set());
@@ -17,7 +17,7 @@ export function useFavoritos(uid: string | undefined) {
         await alternarFavorito(uid, eventoId, ids.has(eventoId));
       } catch (e) {
         console.error('Error al actualizar favorito:', e);
-        Alert.alert('No se pudo guardar', 'Revisa tu conexión e inténtalo de nuevo.');
+        mostrarAviso({ titulo: 'No se pudo guardar', mensaje: 'Revisa tu conexión e inténtalo de nuevo.', tipo: 'error' });
       }
     },
     [uid, ids]

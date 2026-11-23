@@ -11,7 +11,6 @@ const OPCIONES: { id: Periodo; titulo: string; corto: string }[] = [
   { id: '7d', titulo: 'Últimos 7 días', corto: '7 días' },
 ];
 
-// Botón "Acumulado ⌄" que abre un menú para elegir el periodo
 export function SelectorPeriodoAdmin({ periodo, alCambiar }: { periodo: Periodo; alCambiar: (p: Periodo) => void }) {
   const [abierto, setAbierto] = useState(false);
   const { bottom } = useSafeAreaInsets();

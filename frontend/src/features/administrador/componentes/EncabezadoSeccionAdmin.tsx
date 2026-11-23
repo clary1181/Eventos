@@ -7,7 +7,6 @@ const FOTO_ENSENADA = require('../../../../assets/imagenes/ensenada.jpg');
 
 interface Propiedades { titulo: string; subtitulo: string }
 
-// Encabezado compacto con la foto de Ensenada para las pestañas del administrador
 export function EncabezadoSeccionAdmin({ titulo, subtitulo }: Propiedades) {
   const { top } = useSafeAreaInsets();
   return (

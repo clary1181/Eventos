@@ -1,9 +1,8 @@
-import { Alert } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { fechaSuspension, useSuspensionOrganizador } from '@/features/suspension-organizador';
 import { usePerfilOrganizador } from '../contexto/PerfilOrganizadorContexto';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
-// Acción de "Crear evento": solo los organizadores verificados pueden publicar (decisión D1)
 export function useAccionCrearEvento() {
   const router = useRouter();
   const { perfil } = usePerfilOrganizador();
@@ -11,16 +10,20 @@ export function useAccionCrearEvento() {
 
   return () => {
     if (suspension) {
-      Alert.alert('Cuenta suspendida', `No puedes crear eventos hasta el ${fechaSuspension(suspension.hasta)}.${suspension.motivo ? `\n\nMotivo: ${suspension.motivo}` : ''}`);
+      mostrarAviso({ titulo: 'Cuenta suspendida', mensaje: `No puedes crear eventos hasta el ${fechaSuspension(suspension.hasta)}.${suspension.motivo ? `\n\nMotivo: ${suspension.motivo}` : ''}`, tipo: 'error' });
       return;
     }
     if (perfil?.estaVerificado) {
       router.push('/organizador/crear' as Href);
       return;
     }
-    Alert.alert('Verifica tu cuenta', 'Para publicar eventos primero debes verificar tu cuenta de organizador.', [
-      { text: 'Ahora no', style: 'cancel' },
-      { text: 'Completar verificación', onPress: () => router.push('/organizador/verificacion' as Href) },
-    ]);
+    mostrarAviso({
+      titulo: 'Verifica tu cuenta',
+      mensaje: 'Para publicar eventos primero debes verificar tu cuenta de organizador.',
+      tipo: 'info',
+      textoCancelar: 'Ahora no',
+      textoConfirmar: 'Completar verificación',
+      alConfirmar: () => router.push('/organizador/verificacion' as Href),
+    });
   };
 }

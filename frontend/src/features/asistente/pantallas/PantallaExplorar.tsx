@@ -37,7 +37,7 @@ export function PantallaExplorar() {
 
   return (
     <ScrollView ref={scroll} style={estilos.raiz} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" bounces={false} overScrollMode="never">
-      {/* Foto de Ensenada arriba: mismo encabezado que usa el organizador */}
+
       <FondoHero alto={alto}>
         <View style={[estilos.heroContenido, { paddingTop: top + 8 }]}>
           <BarraMarca
@@ -63,13 +63,13 @@ export function PantallaExplorar() {
           placeholderTextColor={Colores.textoSuave}
           returnKeyType="search"
           numberOfLines={1}
+          maxLength={100}
         />
         {c.busqueda.length > 0 && (
           <Ionicons name="close-circle" size={22} color={Colores.textoSuave} onPress={() => c.setBusqueda('')} accessibilityLabel="Borrar búsqueda" />
         )}
       </View>
 
-      {/* Hoja blanca con esquinas redondeadas debajo de la foto */}
       <View style={estilos.hoja}>
         <ChipsCategoria seleccionada={c.categoria} alCambiar={c.setCategoria} />
 

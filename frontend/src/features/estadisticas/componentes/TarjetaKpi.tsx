@@ -18,7 +18,6 @@ interface Propiedades {
   tono?: keyof typeof TONOS;
 }
 
-// Indicador con icono, cifra grande, nombre y una nota opcional (qué significa)
 export function TarjetaKpi({ icono, valor, etiqueta, nota, tono = 'morado' }: Propiedades) {
   return (
     <View style={[estilos.tarjeta, { backgroundColor: TONOS[tono].fondo }]}>

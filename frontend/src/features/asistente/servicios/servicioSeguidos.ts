@@ -1,7 +1,6 @@
 import { collection, deleteDoc, doc, onSnapshot, query, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { db } from '@/infraestructura/firebase';
 
-// ID determinista exigido por las reglas: {asistenteId}_{organizadorId}
 const idSeguido = (uid: string, organizadorId: string) => `${uid}_${organizadorId}`;
 
 export function escucharSeguidos(uid: string, alCambiar: (ids: string[]) => void, alError: (e: Error) => void): Unsubscribe {

@@ -8,7 +8,6 @@ export type EstadoVerificacion =
   | 'aprobada'
   | 'rechazada';
 
-// Documento público: usuarios/{uid}
 export interface PerfilPublico {
   uid: string;
   nombreUsuario: string;
@@ -23,11 +22,10 @@ export interface PerfilPublico {
   estadoCuenta: 'activa' | 'bloqueada';
 }
 
-// Datos que captura el formulario de registro
 export interface DatosRegistro {
   nombre: string;
   apellidos: string;
-  fechaNacimiento: string; // AAAA-MM-DD (se guarda en usuarios/{uid}/privado/perfil)
+  fechaNacimiento: string;
   ciudad: string;
   nombreUsuario: string;
   correo: string;

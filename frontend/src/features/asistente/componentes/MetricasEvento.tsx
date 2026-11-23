@@ -15,7 +15,6 @@ function Casilla({ icono, etiqueta, children }: { icono: React.ComponentProps<ty
   );
 }
 
-// Cuatro casillas: precio, capacidad, estatus y fecha de registro
 export function MetricasEvento({ evento: e }: { evento: EventoPublico }) {
   return (
     <View style={estilos.fila}>

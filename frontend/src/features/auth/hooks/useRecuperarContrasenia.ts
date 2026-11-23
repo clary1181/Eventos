@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { mensajeDeError } from '../utilidades/errores';
 import { validarCorreo } from '../utilidades/validaciones';
 import { recuperarContrasenia } from '../servicios/servicioAuth';
@@ -9,6 +9,7 @@ export function useRecuperarContrasenia() {
   const [error, establecerError] = useState('');
   const [enviando, establecerEnviando] = useState(false);
   const [confirmacionVisible, establecerConfirmacionVisible] = useState(false);
+  const enviandoRef = useRef(false);
 
   const abrir = (correoInicial = '') => {
     establecerCorreo(correoInicial.trim());
@@ -16,14 +17,18 @@ export function useRecuperarContrasenia() {
     establecerVisible(true);
   };
 
-  const cerrar = () => establecerVisible(false);
+  const cerrar = () => {
+    if (!enviandoRef.current) establecerVisible(false);
+  };
   const cerrarConfirmacion = () => establecerConfirmacionVisible(false);
 
   const enviar = async () => {
+    if (enviandoRef.current) return;
     const mensaje = validarCorreo(correo);
     establecerError(mensaje);
     if (mensaje) return;
 
+    enviandoRef.current = true;
     establecerEnviando(true);
     try {
       await recuperarContrasenia(correo);
@@ -33,6 +38,7 @@ export function useRecuperarContrasenia() {
       establecerError(mensajeDeError(e));
     } finally {
       establecerEnviando(false);
+      enviandoRef.current = false;
     }
   };
 

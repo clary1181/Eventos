@@ -4,7 +4,7 @@ import type { AccionReporte, CalificacionAdmin, ContextoReporte, ReporteAdmin } 
 import { avisar, avisarVarios, compradoresDeEvento } from '@/features/notificaciones/servicios/servicioNotificaciones';
 
 const fecha = (v: unknown) => (v instanceof Timestamp ? v.toDate() : null);
-const tiempo = (d: Date | null) => d?.getTime() ?? Number.MAX_SAFE_INTEGER; // serverTimestamp pendiente = más nuevo
+const tiempo = (d: Date | null) => d?.getTime() ?? Number.MAX_SAFE_INTEGER;
 
 export function escucharReportes(alCambiar: (l: ReporteAdmin[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
@@ -72,17 +72,16 @@ export async function obtenerContextoReporte(r: ReporteAdmin): Promise<ContextoR
   try {
     const e = (await getDoc(doc(db, 'eventos', r.eventoId))).data();
     estadoEvento = e ? String(e.estado ?? 'desconocido') : 'eliminado';
-  } catch { /* se deja "desconocido" */ }
+  } catch {  }
   return { reportante, organizador, estadoEvento };
 }
 
-// Cierra el reporte; con "suspender" también retira el evento del catálogo (solo si está aprobado)
 export async function resolverReporte(adminUid: string, r: ReporteAdmin, accion: AccionReporte, nota: string): Promise<void> {
   const lote = writeBatch(db);
   if (accion === 'suspender') {
     lote.update(doc(db, 'eventos', r.eventoId), { estado: 'suspendido', motivoRechazo: nota, actualizadoEn: serverTimestamp() });
   }
-  // Reporte fundado: el organizador recibe una copia anónima (sin quién reportó) para poder responder
+
   if (accion !== 'desestimar') {
     lote.set(doc(collection(db, 'reportesOrganizador')), {
       eventoId: r.eventoId,
@@ -102,7 +101,6 @@ export async function resolverReporte(adminUid: string, r: ReporteAdmin, accion:
   });
   await lote.commit();
 
-  // Avisos (no bloquean la resolución si fallan)
   const motivo = nota || 'Reporte atendido por el administrador';
   if (accion !== 'desestimar') {
     await avisar({

@@ -15,7 +15,6 @@ export interface AccionEvento {
 
 interface Propiedades { visible: boolean; titulo: string; acciones: AccionEvento[]; alCerrar: () => void }
 
-// Menú inferior con las acciones de un evento (el botón de los tres puntos)
 export function HojaAccionesEvento({ visible, titulo, acciones, alCerrar }: Propiedades) {
   const { bottom } = useSafeAreaInsets();
   return (

@@ -11,7 +11,6 @@ type Propiedades = {
   icono: React.ComponentProps<typeof Ionicons>['name'];
 };
 
-// Marcador temporal de una sección que aún no se construye
 export function PantallaEnConstruccion({ titulo, descripcion, icono }: Propiedades) {
   useBarraEstado('dark');
   return (

@@ -7,13 +7,12 @@ import { estilos } from './BotonIcono.estilos';
 type Propiedades = {
   icono: React.ComponentProps<typeof Ionicons>['name'];
   onPress: () => void;
-  etiqueta: string;          // texto para lectores de pantalla
+  etiqueta: string;
   tono?: 'sobreFoto' | 'claro';
   tamano?: number;
-  conPunto?: boolean;        // punto rojo (notificaciones sin leer)
+  conPunto?: boolean;
 };
 
-// Botón circular con un icono: para barras superiores y acciones de tarjetas
 export function BotonIcono({ icono, onPress, etiqueta, tono = 'sobreFoto', tamano = 44, conPunto = false }: Propiedades) {
   const color = tono === 'sobreFoto' ? Colores.textoSobrePrimario : Colores.texto;
   return (

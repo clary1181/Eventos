@@ -1,4 +1,3 @@
-// API pública de la feature "organizador"
 export { ProveedorPerfilOrganizador, usePerfilOrganizador } from './contexto/PerfilOrganizadorContexto';
 export { useAccionCrearEvento } from './hooks/useAccionCrearEvento';
 export { BotonCrearPestana } from './componentes/BotonCrearPestana';

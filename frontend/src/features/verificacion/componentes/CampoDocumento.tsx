@@ -13,7 +13,6 @@ type Propiedades = {
   error?: string;
 };
 
-// Tarjeta para adjuntar una foto: muestra la vista previa y cambia el texto del botón al elegirla
 export function CampoDocumento({ titulo, ayuda, icono, uri, alPresionar, error }: Propiedades) {
   return (
     <View>

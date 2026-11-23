@@ -22,7 +22,6 @@ const aEvento = (id: string, d: DocumentData): EventoPublico => ({
   creadoEn: d.creadoEn instanceof Timestamp ? d.creadoEn.toDate() : null,
 });
 
-// Solo eventos aprobados. El filtro por fecha y por categoría se hace en la app para no depender de índices.
 export function escucharEventosPublicos(alCambiar: (l: EventoPublico[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'eventos'), where('estado', '==', 'aprobado')),
@@ -31,7 +30,6 @@ export function escucharEventosPublicos(alCambiar: (l: EventoPublico[]) => void,
   );
 }
 
-// null = el evento no existe o ya no está aprobado
 export function escucharEventoPublico(id: string, alCambiar: (e: EventoPublico | null) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     doc(db, 'eventos', id),

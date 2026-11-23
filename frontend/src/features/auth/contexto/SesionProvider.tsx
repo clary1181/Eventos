@@ -12,14 +12,13 @@ const SIN_SESION: Base = { usuario: null, perfil: null, pendientePerfil: false, 
 
 const entroConGoogle = (usuario: User) => usuario.providerData.some((p) => p.providerId === 'google.com');
 
-// Decide el estado de sesión para un usuario de Firebase Auth
 async function resolver(usuario: User | null): Promise<Base> {
   const sinVerificar = Entorno.exigirCorreoVerificado && usuario && !usuario.emailVerified;
   if (!usuario || sinVerificar || estaRegistrando()) return SIN_SESION;
 
   const perfil = await obtenerPerfil(usuario.uid);
   if (!perfil) {
-    // Una cuenta nueva de Google aún no tiene perfil: debe completarlo. Cualquier otra sin perfil se cierra.
+
     if (entroConGoogle(usuario)) return { usuario, perfil: null, pendientePerfil: true, cargando: false };
     await signOut(auth);
     return SIN_SESION;
@@ -31,8 +30,6 @@ async function resolver(usuario: User | null): Promise<Base> {
   return { usuario, perfil, pendientePerfil: false, cargando: false };
 }
 
-// Escucha Firebase Auth una sola vez y entrega { usuario, perfil, pendientePerfil, cargando } a toda la app.
-// Así la sesión se restaura al reiniciar la app y las rutas pueden protegerse con <Redirect>.
 export function SesionProvider({ children }: { children: ReactNode }) {
   const [estado, establecerEstado] = useState<Base>({ ...SIN_SESION, cargando: true });
 

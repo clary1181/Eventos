@@ -10,11 +10,10 @@ import { estilos } from './TarjetaEvento.estilos';
 type Propiedades = {
   evento: Evento;
   alPresionar?: () => void;
-  acciones?: ReactNode;      // botones a la derecha (estadísticas, editar, más)
-  compacta?: boolean;        // miniatura y fecha más pequeñas (cuando hay varias acciones)
+  acciones?: ReactNode;
+  compacta?: boolean;
 };
 
-// Tarjeta de evento para listas: miniatura, título, estado, fecha y lugar
 export function TarjetaEvento({ evento, alPresionar, acciones, compacta = false }: Propiedades) {
   return (
     <Pressable style={({ pressed }) => [estilos.tarjeta, pressed && !!alPresionar && estilos.presionada]} onPress={alPresionar} disabled={!alPresionar}>

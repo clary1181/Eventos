@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { useSesion } from '@/features/auth';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import { cambiarVisibilidadCalificacion, escucharCalificacionesAdmin } from '../../reportes/servicios/servicioModeracion';
 import type { CalificacionAdmin } from '../../reportes/tipos';
 import { UMBRAL_REINCIDENCIA } from '../constantes';
@@ -12,7 +12,6 @@ import {
 export type SeccionContenido = 'eventos' | 'calificaciones' | 'organizadores';
 export type FiltroOrganizadores = 'pendientes' | 'suspendidos';
 
-// Organizador con eventos suspendidos que requiere atención o ya está sancionado
 export interface Reincidente { organizador: OrganizadorModeracion; suspendidos: EventoModerable[]; suspensionActiva: boolean }
 export type FiltroEventos = 'publicados' | 'suspendidos';
 export type FiltroCalificaciones = 'todas' | 'ocultas';
@@ -59,7 +58,6 @@ export function useModerarContenido() {
       .filter((c) => texto === '' || normalizar(`${c.eventoTitulo} ${c.asistenteNombre} ${c.comentario}`).includes(texto));
   }, [calificaciones, filtroCals, busqueda]);
 
-  // Organizadores que llegaron al umbral de eventos suspendidos (o ya tienen una suspensión vigente)
   const reincidentes = useMemo<Reincidente[]>(() => {
     const ahora = Date.now();
     return organizadores
@@ -81,63 +79,65 @@ export function useModerarContenido() {
 
   const confirmarSancion = useCallback(async (dias: number, motivo: string) => {
     if (!aSancionar || !perfil) return;
-    if (motivo.trim().length === 0) { Alert.alert('Motivo requerido', 'Explica el motivo de la suspensión; el organizador lo verá.'); return; }
+    if (motivo.trim().length === 0) { mostrarAviso({ titulo: 'Motivo requerido', mensaje: 'Explica el motivo de la suspensión; el organizador lo verá.', tipo: 'error' }); return; }
     setProcesando(true);
     try {
       await suspenderCuenta(perfil.uid, aSancionar.organizador.uid, dias, motivo);
       setASancionar(null);
     } catch (e) {
       console.error('Error al suspender la cuenta:', e);
-      Alert.alert('No se pudo suspender', 'Revisa tu conexión y que hayas publicado las reglas nuevas.');
+      mostrarAviso({ titulo: 'No se pudo suspender', mensaje: 'Revisa tu conexión y que hayas publicado las reglas nuevas.', tipo: 'error' });
     } finally {
       setProcesando(false);
     }
   }, [aSancionar, perfil]);
 
   const quitarSancion = useCallback((r: Reincidente) => {
-    Alert.alert('Levantar suspensión', `${r.organizador.nombre} podrá volver a crear y editar eventos de inmediato.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Levantar',
-        onPress: () => levantarSuspension(r.organizador.uid).catch((err) => {
+    mostrarAviso({
+      titulo: 'Levantar suspensión',
+      mensaje: `${r.organizador.nombre} podrá volver a crear y editar eventos de inmediato.`,
+      tipo: 'info',
+      textoCancelar: 'Cancelar',
+      textoConfirmar: 'Levantar',
+      alConfirmar: () => { void levantarSuspension(r.organizador.uid).catch((err) => {
           console.error('Error al levantar la suspensión:', err);
-          Alert.alert('No se pudo levantar', 'Revisa tu conexión y que hayas publicado las reglas nuevas.');
-        }),
-      },
-    ]);
+          mostrarAviso({ titulo: 'No se pudo levantar', mensaje: 'Revisa tu conexión y que hayas publicado las reglas nuevas.', tipo: 'error' });
+        }); },
+    });
   }, []);
 
   const confirmarSuspension = useCallback(async (motivo: string) => {
     if (!aSuspender) return;
-    if (motivo.trim().length === 0) { Alert.alert('Motivo requerido', 'Explica por qué se suspende el evento; el organizador lo verá.'); return; }
+    if (motivo.trim().length === 0) { mostrarAviso({ titulo: 'Motivo requerido', mensaje: 'Explica por qué se suspende el evento; el organizador lo verá.', tipo: 'error' }); return; }
     setProcesando(true);
     try {
       await suspenderEvento(aSuspender, motivo);
       setASuspender(null);
     } catch (e) {
       console.error('Error al suspender:', e);
-      Alert.alert('No se pudo suspender', 'Revisa tu conexión y que hayas publicado las reglas nuevas.');
+      mostrarAviso({ titulo: 'No se pudo suspender', mensaje: 'Revisa tu conexión y que hayas publicado las reglas nuevas.', tipo: 'error' });
     } finally {
       setProcesando(false);
     }
   }, [aSuspender]);
 
   const reactivar = useCallback((e: EventoModerable) => {
-    Alert.alert('Reactivar evento', `"${e.titulo}" volverá a mostrarse en el catálogo.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Reactivar',
-        onPress: () => reactivarEvento(e).catch((err) => {
+    mostrarAviso({
+      titulo: 'Reactivar evento',
+      mensaje: `"${e.titulo}" volverá a mostrarse en el catálogo.`,
+      tipo: 'info',
+      textoCancelar: 'Cancelar',
+      textoConfirmar: 'Reactivar',
+      alConfirmar: () => { void reactivarEvento(e).catch((err) => {
           console.error('Error al reactivar:', err);
-          Alert.alert('No se pudo reactivar', 'Revisa tu conexión y que hayas publicado las reglas nuevas.');
-        }),
-      },
-    ]);
+          mostrarAviso({ titulo: 'No se pudo reactivar', mensaje: 'Revisa tu conexión y que hayas publicado las reglas nuevas.', tipo: 'error' });
+        }); },
+    });
   }, []);
 
   const alternarOculta = useCallback(async (c: CalificacionAdmin) => {
     try { await cambiarVisibilidadCalificacion(c.id, !c.oculta); }
-    catch (e) { console.error('Error al cambiar la calificación:', e); Alert.alert('No se pudo actualizar', 'Revisa tu conexión e inténtalo de nuevo.'); }
+    catch (e) { console.error('Error al cambiar la calificación:', e); mostrarAviso({ titulo: 'No se pudo actualizar', mensaje: 'Revisa tu conexión e inténtalo de nuevo.', tipo: 'error' }); }
   }, []);
 
   return {

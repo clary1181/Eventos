@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { TipoAviso } from '../componentes/ModalAviso';
 import { codigoDeError, mensajeDeError } from '../utilidades/errores';
 import { validarCorreo } from '../utilidades/validaciones';
@@ -8,11 +8,10 @@ export interface AvisoInicioSesion {
   titulo: string;
   mensaje: string;
   tipo: TipoAviso;
-  // Si es true, se ofrece el botón "Reenviar correo"
+
   permiteReenvio?: boolean;
 }
 
-// Lógica de la pantalla de inicio de sesión (sin nada de diseño)
 export function useInicioSesion() {
   const [correo, establecerCorreo] = useState('');
   const [contrasenia, establecerContrasenia] = useState('');
@@ -21,6 +20,8 @@ export function useInicioSesion() {
   const [cargando, establecerCargando] = useState(false);
   const [aviso, establecerAviso] = useState<AvisoInicioSesion | null>(null);
   const [reenviando, establecerReenviando] = useState(false);
+  const enviandoRef = useRef(false);
+  const googleRef = useRef(false);
 
   const cambiarCorreo = (texto: string) => {
     establecerCorreo(texto);
@@ -35,6 +36,8 @@ export function useInicioSesion() {
   const cerrarAviso = () => establecerAviso(null);
 
   const reenviarCorreo = async () => {
+    if (reenviando || enviandoRef.current) return;
+    enviandoRef.current = true;
     establecerReenviando(true);
     try {
       await reenviarCorreoVerificacion(correo, contrasenia);
@@ -47,20 +50,26 @@ export function useInicioSesion() {
       establecerAviso({ titulo: 'No se pudo reenviar', mensaje: mensajeDeError(error), tipo: 'error' });
     } finally {
       establecerReenviando(false);
+      enviandoRef.current = false;
     }
   };
 
   const enviar = async () => {
+    if (cargando || enviandoRef.current) return;
+    enviandoRef.current = true;
     const eCorreo = validarCorreo(correo);
     const eContrasenia = contrasenia ? '' : 'Ingresa tu contraseña.';
     establecerErrorCorreo(eCorreo);
     establecerErrorContrasenia(eContrasenia);
-    if (eCorreo || eContrasenia) return;
+    if (eCorreo || eContrasenia) {
+      enviandoRef.current = false;
+      return;
+    }
 
     establecerCargando(true);
     try {
       await iniciarSesion(correo, contrasenia);
-      // La redirección la hace la ruta (auth) al detectar la sesión
+
     } catch (error) {
       if (codigoDeError(error) === 'auth/correo-no-verificado') {
         establecerAviso({
@@ -74,20 +83,22 @@ export function useInicioSesion() {
       }
     } finally {
       establecerCargando(false);
+      enviandoRef.current = false;
     }
   };
 
   const iniciarConGoogle = async () => {
-    if (cargando) return;
+    if (cargando || googleRef.current) return;
+    googleRef.current = true;
     establecerCargando(true);
     try {
       await iniciarSesionConGoogle();
-      // Si la persona cancela no se muestra nada. Si entra, la ruta (auth) hace la redirección:
-      // a su pantalla de rol, o a "Completar perfil" si es su primera vez.
+
     } catch (error) {
       establecerAviso({ titulo: 'No se pudo iniciar con Google', mensaje: mensajeDeError(error), tipo: 'error' });
     } finally {
       establecerCargando(false);
+      googleRef.current = false;
     }
   };
 

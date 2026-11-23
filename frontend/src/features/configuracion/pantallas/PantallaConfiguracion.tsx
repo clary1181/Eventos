@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useBarraEstado } from '@/compartido/utilidades/useBarraEstado';
@@ -13,13 +13,13 @@ import { SeccionConfiguracion } from '../componentes/SeccionConfiguracion';
 import { useEditarPerfil } from '../hooks/useEditarPerfil';
 import { seccionesPorRol } from '../secciones';
 import type { FilaConfig, SeccionConfig } from '../tipos';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
-// Pantalla única para los tres roles: las secciones propias dependen del rol de la sesión
 export function PantallaConfiguracion() {
   useBarraEstado('dark');
   const router = useRouter();
   const { perfil } = useSesion();
-  const puedeEditarPerfil = !!perfil && perfil.rol !== 'administrador'; // el admin no edita su perfil
+  const puedeEditarPerfil = !!perfil && perfil.rol !== 'administrador';
   const editar = useEditarPerfil(puedeEditarPerfil ? perfil?.uid : undefined);
   const [cambiandoClave, setCambiandoClave] = useState(false);
   const [editando, setEditando] = useState(false);
@@ -47,10 +47,20 @@ export function PantallaConfiguracion() {
   const secciones = [cuenta, ...seccionesPorRol(perfil.rol, ir), soporte].filter((s) => s.filas.length > 0);
 
   const confirmarSalida = () =>
-    Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Cerrar sesión', style: 'destructive', onPress: () => cerrarSesion() },
-    ]);
+    mostrarAviso({
+      titulo: 'Cerrar sesión',
+      mensaje: '¿Seguro que quieres salir?',
+      tipo: 'info',
+      textoConfirmar: 'Cerrar sesión',
+      textoCancelar: 'Cancelar',
+      alConfirmar: () => {
+        void cerrarSesion().catch((error) => mostrarAviso({
+          titulo: 'No se pudo cerrar la sesión',
+          mensaje: error instanceof Error ? error.message : 'Revisa tu conexión e inténtalo de nuevo.',
+          tipo: 'error',
+        }));
+      },
+    });
 
   return (
     <View style={estilos.raiz}>

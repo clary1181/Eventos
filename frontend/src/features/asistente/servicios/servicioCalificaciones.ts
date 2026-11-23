@@ -25,7 +25,6 @@ const aCalificacion = (id: string, d: Record<string, unknown>): Calificacion => 
 
 const masNuevasPrimero = (l: Calificacion[]) => l.sort((a, b) => b.creadaEn.getTime() - a.creadaEn.getTime());
 
-// Calificaciones visibles de un evento (las ocultas por un admin no se piden)
 export function escucharCalificacionesEvento(eventoId: string, alCambiar: (l: Calificacion[]) => void, alError: (e: Error) => void): Unsubscribe {
   return onSnapshot(
     query(collection(db, 'calificaciones'), where('eventoId', '==', eventoId), where('oculta', '==', false)),
@@ -42,7 +41,6 @@ export function escucharMisCalificaciones(uid: string, alCambiar: (l: Calificaci
   );
 }
 
-// ID {uid}_{eventoId}: una sola calificación por persona y evento
 export const enviarCalificacion = (uid: string, nombre: string, evento: { id: string; organizadorId: string; titulo: string }, estrellas: number, comentario: string) =>
   setDoc(doc(db, 'calificaciones', `${uid}_${evento.id}`), {
     eventoId: evento.id,

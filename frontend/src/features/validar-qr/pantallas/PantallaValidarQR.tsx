@@ -23,7 +23,6 @@ export function PantallaValidarQR() {
 
   if (!perfil) return null;
 
-  // 1) Escáner del evento elegido
   if (elegido) {
     if (!permiso) return <View style={estilos.centro}><Stack.Screen options={{ headerShown: false }} /><ActivityIndicator color={Colores.primario} /></View>;
     if (!permiso.granted) {
@@ -32,7 +31,16 @@ export function PantallaValidarQR() {
           <Stack.Screen options={{ headerShown: false }} />
           <Ionicons name="camera-outline" size={56} color={Colores.acento} />
           <Text style={estilos.mensaje}>Necesitamos la cámara para leer los códigos QR de las entradas.</Text>
-          <Pressable style={estilos.boton} onPress={() => (permiso.canAskAgain ? pedirPermiso() : Linking.openSettings())}>
+          <Pressable
+            style={estilos.boton}
+            onPress={async () => {
+              try {
+                if (permiso.canAskAgain) await pedirPermiso();
+                else await Linking.openSettings();
+              } catch {
+              }
+            }}
+          >
             <Text style={estilos.textoBoton}>{permiso.canAskAgain ? 'Permitir cámara' : 'Abrir ajustes'}</Text>
           </Pressable>
           <Text style={{ color: Colores.primario, fontWeight: '700' }} onPress={() => setElegido(null)}>Elegir otro evento</Text>
@@ -47,7 +55,6 @@ export function PantallaValidarQR() {
     );
   }
 
-  // 2) Elegir el evento que se atiende
   return (
     <View style={estilos.raiz}>
       <Stack.Screen options={{ headerShown: false }} />

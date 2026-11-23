@@ -13,7 +13,6 @@ const RUTA_CONFIG = {
   administrador: '/administrador/configuracion',
 } as const;
 
-// Perfil básico para asistente y administrador (el del organizador tiene su propia pantalla)
 export function PantallaPerfil() {
   useBarraEstado('dark');
   const router = useRouter();

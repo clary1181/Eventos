@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { useSesion } from '@/features/auth';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import {
   cambiarVisibilidadCalificacion, escucharCalificacionesAdmin, escucharReportes, obtenerContextoReporte, resolverReporte,
 } from '../servicios/servicioModeracion';
@@ -36,7 +36,10 @@ export function useModeracion() {
   const abrir = useCallback((r: ReporteAdmin) => {
     setSeleccionado(r);
     setContexto(null);
-    obtenerContextoReporte(r).then(setContexto);
+    obtenerContextoReporte(r).then(setContexto).catch((e) => {
+      console.warn('No se pudo cargar el contexto del reporte:', e);
+      setContexto(null);
+    });
   }, []);
   const cerrar = useCallback(() => { if (!procesando) setSeleccionado(null); }, [procesando]);
 
@@ -49,12 +52,13 @@ export function useModeracion() {
         setSeleccionado(null);
       } catch (e) {
         console.error('Error al resolver el reporte:', e);
-        Alert.alert(
-          'No se pudo completar',
-          accion === 'suspender'
+        mostrarAviso({
+          titulo: 'No se pudo completar',
+          mensaje: accion === 'suspender'
             ? 'No se pudo suspender el evento. Solo se pueden suspender eventos aprobados; revisa que hayas publicado las reglas nuevas.'
-            : 'Revisa tu conexión y que hayas publicado las reglas nuevas.'
-        );
+            : 'Revisa tu conexión y que hayas publicado las reglas nuevas.',
+          tipo: 'error',
+        });
       } finally {
         setProcesando(false);
       }
@@ -67,7 +71,7 @@ export function useModeracion() {
       await cambiarVisibilidadCalificacion(c.id, !c.oculta);
     } catch (e) {
       console.error('Error al cambiar la calificación:', e);
-      Alert.alert('No se pudo actualizar', 'Revisa tu conexión e inténtalo de nuevo.');
+      mostrarAviso({ titulo: 'No se pudo actualizar', mensaje: 'Revisa tu conexión e inténtalo de nuevo.', tipo: 'error' });
     }
   }, []);
 

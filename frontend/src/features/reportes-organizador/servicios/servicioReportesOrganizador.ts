@@ -30,6 +30,5 @@ export function escucharReportesOrganizador(uid: string, alCambiar: (l: ReporteO
   );
 }
 
-// Una sola respuesta por reporte (lo exigen las reglas)
 export const responderReporte = (id: string, texto: string) =>
   updateDoc(doc(db, 'reportesOrganizador', id), { respuestaOrganizador: texto.trim(), respondidoEn: serverTimestamp() });

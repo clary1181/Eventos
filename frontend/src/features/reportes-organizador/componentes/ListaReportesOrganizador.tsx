@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colores, Fuentes } from '@/compartido/tema';
 import { formatearFechaCorta } from '@/features/eventos';
@@ -13,6 +14,7 @@ interface Propiedades {
 }
 
 export function ListaReportesOrganizador({ lista, cargando, error, responder }: Propiedades) {
+  const inset = useSafeAreaInsets();
   const [activo, setActivo] = useState<ReporteOrganizador | null>(null);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -75,8 +77,8 @@ export function ListaReportesOrganizador({ lista, cargando, error, responder }: 
       ))}
 
       <Modal visible={!!activo} transparent animationType="fade" onRequestClose={() => setActivo(null)}>
-        <KeyboardAvoidingView style={estilos.fondoModal} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={estilos.modal}>
+        <KeyboardAvoidingView style={estilos.fondoModal} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={[estilos.modal, { paddingBottom: Math.max(20, inset.bottom + 12), maxHeight: '88%' }]}>
             <Text style={estilos.tituloModal}>Responder reporte</Text>
             <Text style={estilos.vacio}>{activo?.eventoTitulo}. Solo puedes responder una vez y el administrador podrá verlo.</Text>
             <TextInput

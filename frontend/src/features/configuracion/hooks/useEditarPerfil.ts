@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import {
   escucharPerfilAsistente, guardarDatosPerfil, type PerfilAsistente,
 } from '@/features/asistente/servicios/servicioPerfilAsistente';
 
 type Datos = { nombre: string; apellidos: string; ciudad: string; biografia: string };
 
-// Lee y guarda los datos editables de usuarios/{uid} (las reglas permiten los mismos campos a todos los roles)
 export function useEditarPerfil(uid: string | undefined) {
   const [perfil, setPerfil] = useState<PerfilAsistente | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -25,7 +24,7 @@ export function useEditarPerfil(uid: string | undefined) {
         return true;
       } catch (e) {
         console.error('Error al guardar el perfil:', e);
-        Alert.alert('No se pudo guardar', 'Revisa tu conexión e inténtalo de nuevo.');
+        mostrarAviso({ titulo: 'No se pudo guardar', mensaje: 'Revisa tu conexión e inténtalo de nuevo.', tipo: 'error' });
         return false;
       } finally {
         setGuardando(false);

@@ -21,11 +21,10 @@ export function PantallaRegistro() {
   const [calendarioVisible, establecerCalendarioVisible] = useState(false);
   const irAInicioSesion = () => router.replace('/iniciar-sesion');
 
-  // Mientras carga la fuente se muestra el fondo en blanco para evitar un parpadeo
   if (!fuentesListas) return <View style={{ flex: 1, backgroundColor: Colores.fondo }} />;
 
   return (
-    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         ref={teclado.scrollRef}
         onScroll={teclado.alScroll}
@@ -50,9 +49,9 @@ export function PantallaRegistro() {
 
           {r.paso === 1 ? (
             <>
-              <CampoTexto icono="person-outline" placeholder="Nombre(s)" value={r.valores.nombre} onChangeText={(t) => r.cambiar('nombre', t)} onFocus={teclado.alEnfocar} error={r.errores.nombre} autoCapitalize="words" />
-              <CampoTexto icono="people-outline" placeholder="Apellido paterno" value={r.valores.apellidoPaterno} onChangeText={(t) => r.cambiar('apellidoPaterno', t)} onFocus={teclado.alEnfocar} error={r.errores.apellidoPaterno} autoCapitalize="words" />
-              <CampoTexto icono="people-outline" placeholder="Apellido materno" value={r.valores.apellidoMaterno} onChangeText={(t) => r.cambiar('apellidoMaterno', t)} onFocus={teclado.alEnfocar} error={r.errores.apellidoMaterno} autoCapitalize="words" />
+              <CampoTexto icono="person-outline" placeholder="Nombre(s)" value={r.valores.nombre} onChangeText={(t) => r.cambiar('nombre', t)} onFocus={teclado.alEnfocar} error={r.errores.nombre} autoCapitalize="words" maxLength={40} />
+              <CampoTexto icono="people-outline" placeholder="Apellido paterno" value={r.valores.apellidoPaterno} onChangeText={(t) => r.cambiar('apellidoPaterno', t)} onFocus={teclado.alEnfocar} error={r.errores.apellidoPaterno} autoCapitalize="words" maxLength={40} />
+              <CampoTexto icono="people-outline" placeholder="Apellido materno" value={r.valores.apellidoMaterno} onChangeText={(t) => r.cambiar('apellidoMaterno', t)} onFocus={teclado.alEnfocar} error={r.errores.apellidoMaterno} autoCapitalize="words" maxLength={40} />
 
               <CampoSelector
                 icono="calendar-outline"
@@ -66,10 +65,10 @@ export function PantallaRegistro() {
             </>
           ) : (
             <>
-              <CampoTexto icono="at-outline" placeholder="Nombre de usuario" value={r.valores.nombreUsuario} onChangeText={(t) => r.cambiar('nombreUsuario', t)} onFocus={teclado.alEnfocar} error={r.errores.nombreUsuario} autoCapitalize="none" />
-              <CampoTexto icono="mail-outline" placeholder="Correo electrónico" value={r.valores.correo} onChangeText={(t) => r.cambiar('correo', t)} onFocus={teclado.alEnfocar} error={r.errores.correo} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
-              <CampoTexto icono="lock-closed-outline" placeholder="Contraseña" esContrasenia value={r.valores.contrasenia} onChangeText={(t) => r.cambiar('contrasenia', t)} onFocus={teclado.alEnfocar} error={r.errores.contrasenia} autoCapitalize="none" />
-              <CampoTexto icono="shield-checkmark-outline" placeholder="Confirmar contraseña" esContrasenia value={r.valores.confirmar} onChangeText={(t) => r.cambiar('confirmar', t)} onFocus={teclado.alEnfocar} error={r.errores.confirmar} autoCapitalize="none" />
+              <CampoTexto icono="at-outline" placeholder="Nombre de usuario" value={r.valores.nombreUsuario} onChangeText={(t) => r.cambiar('nombreUsuario', t)} onFocus={teclado.alEnfocar} error={r.errores.nombreUsuario} autoCapitalize="none" maxLength={20} />
+              <CampoTexto icono="mail-outline" placeholder="Correo electrónico" value={r.valores.correo} onChangeText={(t) => r.cambiar('correo', t)} onFocus={teclado.alEnfocar} error={r.errores.correo} keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
+              <CampoTexto icono="lock-closed-outline" placeholder="Contraseña" esContrasenia value={r.valores.contrasenia} onChangeText={(t) => r.cambiar('contrasenia', t)} onFocus={teclado.alEnfocar} error={r.errores.contrasenia} autoCapitalize="none" maxLength={64} />
+              <CampoTexto icono="shield-checkmark-outline" placeholder="Confirmar contraseña" esContrasenia value={r.valores.confirmar} onChangeText={(t) => r.cambiar('confirmar', t)} onFocus={teclado.alEnfocar} error={r.errores.confirmar} autoCapitalize="none" maxLength={64} />
               <SelectorRol valor={r.valores.rol} alCambiar={(rol) => r.cambiar('rol', rol)} />
 
               <View style={estilos.filaBotones}>
@@ -91,11 +90,9 @@ export function PantallaRegistro() {
           </View>
         </View>
 
-        {/* Espacio para poder desplazar hasta el último campo con el teclado abierto */}
         <View style={{ height: teclado.rellenoTeclado }} />
       </ScrollView>
 
-      {/* Calendario de fecha de nacimiento */}
       <SelectorFecha
         visible={calendarioVisible}
         valor={r.valores.fechaNacimiento}
@@ -103,7 +100,6 @@ export function PantallaRegistro() {
         alElegir={(fecha) => r.cambiar('fechaNacimiento', fecha)}
       />
 
-      {/* Lista de ciudades */}
       <ModalCentrado visible={r.ciudadesVisible} alCerrar={r.cerrarCiudades}>
         <Text style={estilos.tituloModal}>Selecciona tu ciudad</Text>
         {CIUDADES_BAJA_CALIFORNIA.map((ciudad) => {
@@ -117,7 +113,6 @@ export function PantallaRegistro() {
         })}
       </ModalCentrado>
 
-      {/* Cuenta creada */}
       <ModalCentrado visible={r.exito.visible} alCerrar={r.cerrarExito}>
         <Ionicons name="checkmark-circle" size={64} color={Colores.exito} style={estilos.iconoExito} />
         <Text style={estilos.tituloModal}>¡Cuenta creada!</Text>

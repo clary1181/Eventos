@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import type { Evento } from '@/features/eventos';
 import { HojaAccionesEvento, type AccionEvento } from '../componentes/HojaAccionesEvento';
 import { eliminarEvento } from '../servicios/servicioGestionEvento';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
 const EDITABLES = ['pendiente_aprobacion', 'requiere_correccion', 'aprobado'];
 
-// Acciones del botón de tres puntos de un evento: ver estadísticas, entradas vendidas, editar y eliminar
 export function useGestionEvento() {
   const router = useRouter();
   const [evento, setEvento] = useState<Evento | null>(null);
   const cerrar = () => setEvento(null);
-  // Se espera a que el menú se cierre antes de mostrar una alerta (evita que se empalmen)
   const luego = (f: () => void) => { cerrar(); setTimeout(f, 250); };
 
   const verEstadisticas = (e: Evento) => router.push(`/organizador/estadisticas-evento?id=${e.id}` as Href);
@@ -20,24 +18,25 @@ export function useGestionEvento() {
 
   const eliminar = (e: Evento) => {
     if (e.vendidas > 0) {
-      Alert.alert(
-        'No se puede eliminar',
-        `"${e.titulo}" ya tiene ${e.vendidas} ${e.vendidas === 1 ? 'entrada vendida' : 'entradas vendidas'}. Para proteger a quienes ya compraron, un evento con ventas no se elimina.`
-      );
+      mostrarAviso({
+        titulo: 'No se puede eliminar',
+        mensaje: `"${e.titulo}" ya tiene ${e.vendidas} ${e.vendidas === 1 ? 'entrada vendida' : 'entradas vendidas'}. Para proteger a quienes ya compraron, un evento con ventas no se elimina.`,
+        tipo: 'error',
+      });
       return;
     }
-    Alert.alert('Eliminar evento', `Se eliminará "${e.titulo}" de forma permanente. Esta acción no se puede deshacer.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: () =>
+    mostrarAviso({
+      titulo: 'Eliminar evento',
+      mensaje: `Se eliminará "${e.titulo}" de forma permanente. Esta acción no se puede deshacer.`,
+      tipo: 'error',
+      textoCancelar: 'Cancelar',
+      textoConfirmar: 'Eliminar',
+      alConfirmar: () =>
           eliminarEvento(e.id).catch((err) => {
             console.error('Error al eliminar el evento:', err);
-            Alert.alert('No se pudo eliminar', 'Revisa tu conexión y que hayas publicado las reglas nuevas. Si alguien compró entradas mientras tanto, ya no se puede eliminar.');
+            mostrarAviso({ titulo: 'No se pudo eliminar', mensaje: 'Revisa tu conexión y que hayas publicado las reglas nuevas. Si alguien compró entradas mientras tanto, ya no se puede eliminar.', tipo: 'error' });
           }),
-      },
-    ]);
+    });
   };
 
   const acciones: AccionEvento[] = evento

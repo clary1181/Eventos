@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +26,7 @@ import { useReporteEvento } from '../hooks/useReporteEvento';
 import { MAX_ENTRADAS_POR_EVENTO } from '../tipos';
 import { formatearFechaHora, formatearPrecio } from '../utilidades/formato';
 import { estilos } from './PantallaDetalleEvento.estilos';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 
 export function PantallaDetalleEvento() {
   useBarraEstadoAsistente('light');
@@ -88,7 +89,7 @@ export function PantallaDetalleEvento() {
   const compartir = () =>
     Share.share({
       message: `${evento.titulo}\n${formatearFechaHora(evento.fechaInicio)}\n${evento.lugar}, Ensenada · ${formatearPrecio(evento.precio)}\nEncuéntralo en MR-Eventos.`,
-    }).catch(() => Alert.alert('No se pudo compartir', 'Inténtalo de nuevo.'));
+    }).catch(() => mostrarAviso({ titulo: 'No se pudo compartir', mensaje: 'Inténtalo de nuevo.', tipo: 'error' }));
 
   return (
     <View style={estilos.raiz}>

@@ -6,7 +6,6 @@ import type { EventoPublico } from '../tipos';
 import { coloresCategoria, ICONO_CATEGORIA } from '../utilidades/categorias';
 import { formatearFechaCorta, formatearHora } from '../utilidades/formato';
 
-// Fila de tres bloques: fecha y hora | lugar | categoría
 export function DatosPrincipalesEvento({ evento: e }: { evento: EventoPublico }) {
   const [fondo, texto] = coloresCategoria(e.categoria);
   return (

@@ -5,7 +5,6 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { estilos } from './EncabezadoAdmin.estilos';
 
-// Misma foto de Ensenada que el inicio de sesión (frontend/assets/imagenes/ensenada.jpg)
 const FOTO_ENSENADA = require('../../../../assets/imagenes/ensenada.jpg');
 
 export const ALTO_ENCABEZADO_ADMIN = 232;
@@ -16,7 +15,6 @@ interface Propiedades {
   alPerfil: () => void;
 }
 
-// Encabezado del panel: foto con velo morado, marca, campana, perfil y título
 export function EncabezadoAdmin({ hayPendientes, alAvisos, alPerfil }: Propiedades) {
   const { top } = useSafeAreaInsets();
 

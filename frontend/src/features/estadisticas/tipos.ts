@@ -1,4 +1,3 @@
-// Datos mínimos de una entrada vendida (colección "entradas") para calcular métricas
 export interface EntradaResumen {
   eventoId: string;
   precio: number;
@@ -6,7 +5,6 @@ export interface EntradaResumen {
   creadaEn: Date;
 }
 
-// Calificación visible (no oculta) que recibió un evento del organizador
 export interface CalificacionResumen {
   id: string;
   eventoId: string;

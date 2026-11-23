@@ -19,7 +19,6 @@ import { CampanaAvisos } from '@/features/notificaciones';
 
 const MORADO = Colores.primario;
 
-// "5 organizadores por verificar" / "1 organizador por verificar" / sin dato
 const textoTarea = (n: Conteo, singular: string, plural: string, sufijo: string) =>
   n === null ? `${plural} ${sufijo}` : `${n} ${n === 1 ? singular : plural} ${sufijo}`;
 
@@ -57,7 +56,7 @@ export function PantallaInicioAdministrador() {
                 </>
               }
             />
-            <Text style={estilos.saludo} numberOfLines={1}>Hola, {perfil?.nombre ?? 'administrador'} 👋</Text>
+            <Text style={estilos.saludo} numberOfLines={1}>Hola, {perfil?.nombre ?? 'administrador'}</Text>
             <Text style={estilos.subtitulo}>Supervisa la plataforma, verifica organizadores y revisa eventos.</Text>
           </View>
         </FondoHero>

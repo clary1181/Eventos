@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import { useSesion } from '@/features/auth';
 import {
   escucharContenido, guardarContenido, type ClaveContenido, type ItemContenido,
 } from '../servicios/servicioContenido';
 
-// Lee el texto editable (o el de por defecto) y, solo para el administrador, permite guardarlo
 export function useContenido(clave: ClaveContenido, porDefecto: ItemContenido[]) {
   const { perfil } = useSesion();
   const [remoto, setRemoto] = useState<ItemContenido[] | null>(null);
@@ -34,12 +33,13 @@ export function useContenido(clave: ClaveContenido, porDefecto: ItemContenido[])
       } catch (e) {
         console.error('Error al guardar el contenido:', e);
         const codigo = (e as { code?: string })?.code ?? '';
-        Alert.alert(
-          'No se pudo guardar',
-          codigo === 'permission-denied'
+        mostrarAviso({
+          titulo: 'No se pudo guardar',
+          mensaje: codigo === 'permission-denied'
             ? 'Las reglas de Firestore no permitieron guardar. Revisa que ya publicaste las reglas nuevas (firebase deploy --only firestore:rules).'
-            : 'Revisa tu conexión e inténtalo de nuevo.'
-        );
+            : 'Revisa tu conexión e inténtalo de nuevo.',
+          tipo: 'error',
+        });
         return false;
       } finally {
         setGuardando(false);

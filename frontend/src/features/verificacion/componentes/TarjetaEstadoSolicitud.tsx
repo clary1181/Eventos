@@ -8,7 +8,6 @@ import { estilos } from './TarjetaEstadoSolicitud.estilos';
 const FORMATO_FECHA = (f?: Date) =>
   f ? `${f.getDate()}/${f.getMonth() + 1}/${f.getFullYear()}` : undefined;
 
-// Resultado de la solicitud cuando ya no se puede editar: en revisión, aprobada o rechazada
 export function TarjetaEstadoSolicitud({ solicitud }: { solicitud: SolicitudVerificacion }) {
   const enviada = FORMATO_FECHA(solicitud.actualizadaEn ?? solicitud.creadaEn);
 

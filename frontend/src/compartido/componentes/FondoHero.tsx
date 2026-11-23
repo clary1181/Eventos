@@ -3,14 +3,11 @@ import { Image, View, StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Colores } from '@/compartido/tema';
 
-// Foto de Ensenada (frontend/assets/imagenes/ensenada.jpg), proporción 1600x1066
 const FOTO_ENSENADA = require('../../../assets/imagenes/ensenada.jpg');
 const RELACION_FOTO = 1600 / 1066;
 
 type Propiedades = { alto: number; children?: ReactNode };
 
-// Franja superior con la foto completa de Ensenada y un degradado morado.
-// Lo que se pasa como hijo se dibuja encima (barra de marca, saludo, etc.).
 export function FondoHero({ alto, children }: Propiedades) {
   const { width } = useWindowDimensions();
 

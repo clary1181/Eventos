@@ -5,7 +5,6 @@ import { Colores } from '@/compartido/tema';
 
 interface Propiedades { uri: string | null; alPulsar: () => void }
 
-// Vista previa con las proporciones reales de la imagen (sin recortar). Las muy altas se limitan a 420 px.
 export function SelectorFoto({ uri, alPulsar }: Propiedades) {
   const [proporcion, setProporcion] = useState(16 / 9);
 

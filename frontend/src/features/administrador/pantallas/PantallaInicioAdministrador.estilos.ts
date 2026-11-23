@@ -7,7 +7,7 @@ export const estilos = StyleSheet.create({
     backgroundColor: '#FCFAFF', borderTopLeftRadius: 30, borderTopRightRadius: 30,
     marginTop: -30, paddingHorizontal: 16, paddingTop: 22, paddingBottom: 28, minHeight: 520,
   },
-  
+
   heroContenido: { flex: 1, paddingHorizontal: Espaciado.lg },
   saludo: { marginTop: Espaciado.md, color: Colores.textoSobrePrimario, fontSize: 26, fontFamily: Fuentes.extranegrita },
   subtitulo: { marginTop: 4, color: Colores.textoSobrePrimario, fontSize: 15, lineHeight: 22, fontFamily: Fuentes.regular, maxWidth: '75%' },

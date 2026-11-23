@@ -9,7 +9,6 @@ export interface OrganizadorPublico {
   ciudad: string;
 }
 
-// Solo datos públicos de usuarios/{uid}; el teléfono es privado y no se muestra
 export async function obtenerOrganizadorPublico(uid: string): Promise<OrganizadorPublico | null> {
   const d = (await getDoc(doc(db, 'usuarios', uid))).data();
   if (!d) return null;

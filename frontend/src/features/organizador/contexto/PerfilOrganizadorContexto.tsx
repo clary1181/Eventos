@@ -10,7 +10,6 @@ interface Estado {
 
 const Contexto = createContext<Estado>({ perfil: null });
 
-// Un solo listener del perfil para todas las pantallas del organizador
 export function ProveedorPerfilOrganizador({ children }: { children: ReactNode }) {
   const { perfil: perfilSesion } = useSesion();
   const uid = perfilSesion?.uid;
@@ -23,7 +22,6 @@ export function ProveedorPerfilOrganizador({ children }: { children: ReactNode }
     return escucharPerfilOrganizador(uid, establecerPerfil, () => undefined);
   }, [uid]);
 
-  // Mientras llega el primer dato en vivo se usa lo que ya cargó la sesión
   const inicial: PerfilOrganizador | null = perfilSesion
     ? { ...perfilSesion, redes: {}, promedioCalificacion: 0, totalCalificaciones: 0 }
     : null;

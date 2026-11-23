@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { mostrarAviso } from '@/compartido/avisos/AvisosProvider';
 import { escucharReportesOrganizador, responderReporte } from '../servicios/servicioReportesOrganizador';
 import type { ReporteOrganizador } from '../tipos';
 
@@ -18,13 +18,13 @@ export function useReportesOrganizador(uid: string | undefined) {
   }, [uid]);
 
   const responder = useCallback(async (id: string, texto: string): Promise<boolean> => {
-    if (texto.trim().length === 0) { Alert.alert('Escribe tu respuesta', 'La respuesta no puede estar vacía.'); return false; }
+    if (texto.trim().length === 0) { mostrarAviso({ titulo: 'Escribe tu respuesta', mensaje: 'La respuesta no puede estar vacía.', tipo: 'error' }); return false; }
     try {
       await responderReporte(id, texto);
       return true;
     } catch (e) {
       console.error('Error al responder el reporte:', e);
-      Alert.alert('No se pudo enviar', 'Revisa tu conexión. Solo puedes responder una vez por reporte.');
+      mostrarAviso({ titulo: 'No se pudo enviar', mensaje: 'Revisa tu conexión. Solo puedes responder una vez por reporte.', tipo: 'error' });
       return false;
     }
   }, []);

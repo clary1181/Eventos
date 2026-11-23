@@ -19,12 +19,11 @@ export function PantallaInicioSesion() {
   const recuperar = useRecuperarContrasenia();
   const fuentesListas = useFuentes();
 
-  // Mientras carga la fuente se muestra el fondo en blanco para evitar un parpadeo
   if (!fuentesListas) return <View style={{ flex: 1, backgroundColor: Colores.fondo }} />;
 
   return (
-    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Fija al fondo; el formulario pasa por encima */}
+    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+
       <DecoracionConcierto />
 
       <ScrollView
@@ -48,6 +47,7 @@ export function PantallaInicioSesion() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            maxLength={254}
           />
           <CampoTexto
             icono="lock-closed-outline"
@@ -58,6 +58,7 @@ export function PantallaInicioSesion() {
             error={sesion.errorContrasenia}
             autoCapitalize="none"
             autoComplete="password"
+            maxLength={64}
           />
 
           <Pressable style={estilos.enlaceOlvido} onPress={() => recuperar.abrir(sesion.correo)}>
@@ -72,6 +73,7 @@ export function PantallaInicioSesion() {
             titulo="Continuar con Google"
             onPress={sesion.iniciarConGoogle}
             icono={<Ionicons name="logo-google" size={20} color="#4285F4" />}
+            deshabilitado={sesion.cargando}
           />
 
           <View style={estilos.filaRegistro}>
@@ -83,7 +85,6 @@ export function PantallaInicioSesion() {
         </View>
       </ScrollView>
 
-      {/* Avisos del login: credenciales incorrectas, correo sin verificar, Google... */}
       <ModalAviso
         visible={!!sesion.aviso}
         titulo={sesion.aviso?.titulo ?? ''}
@@ -95,7 +96,6 @@ export function PantallaInicioSesion() {
         cargandoAccion={sesion.reenviando}
       />
 
-      {/* Confirmación de recuperación de contraseña */}
       <ModalAviso
         visible={recuperar.confirmacionVisible}
         titulo="Revisa tu correo"

@@ -9,11 +9,17 @@ export const estilos = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Espaciado.xl,
   },
+  fondoPresion: {
+    ...StyleSheet.absoluteFillObject,
+  },
   tarjeta: {
     width: '100%',
     maxWidth: 380,
     backgroundColor: Colores.fondo,
     borderRadius: Radios.tarjeta,
     padding: Espaciado.xl,
+  },
+  contenido: {
+    paddingBottom: Espaciado.sm,
   },
 });

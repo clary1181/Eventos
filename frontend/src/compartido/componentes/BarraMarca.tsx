@@ -6,7 +6,6 @@ import { estilos } from './BarraMarca.estilos';
 
 type Propiedades = { alAtras?: () => void; derecha?: ReactNode };
 
-// Barra superior sobre la foto: (flecha atrás) + boleto + "MR-Eventos", y acciones a la derecha
 export function BarraMarca({ alAtras, derecha }: Propiedades) {
   return (
     <View style={estilos.fila}>

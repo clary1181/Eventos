@@ -4,7 +4,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Misma foto de Ensenada que el resto de la app (frontend/assets/imagenes/ensenada.jpg)
 const FOTO_ENSENADA = require('../../../../assets/imagenes/ensenada.jpg');
 
 export const ALTO_ENCABEZADO_ASISTENTE = 236;

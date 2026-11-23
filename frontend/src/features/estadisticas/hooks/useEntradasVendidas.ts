@@ -5,13 +5,12 @@ export interface Comprador {
   asistenteId: string;
   nombre: string;
   usuario: string;
-  entradas: EntradaVendida[]; // ordenadas por número
+  entradas: EntradaVendida[];
   total: number;
   usadas: number;
   ultimaCompra: Date;
 }
 
-// Entradas vendidas de un evento agrupadas por comprador, en tiempo real
 export function useEntradasVendidas(uid: string | undefined, eventoId: string | undefined) {
   const [entradas, setEntradas] = useState<EntradaVendida[]>([]);
   const [nombres, setNombres] = useState<Record<string, NombreComprador>>({});
@@ -28,14 +27,13 @@ export function useEntradasVendidas(uid: string | undefined, eventoId: string | 
     );
   }, [uid, eventoId]);
 
-  // Busca el nombre de cada comprador nuevo
   useEffect(() => {
     const faltan = Array.from(new Set<string>(entradas.map((e) => e.asistenteId))).filter((id) => id && !nombres[id]);
     if (faltan.length === 0) return;
     let activo = true;
     Promise.all(faltan.map(async (id) => [id, await obtenerNombreComprador(id)] as const)).then((pares) => {
       if (activo) setNombres((previos) => ({ ...previos, ...Object.fromEntries(pares) }));
-    });
+    }).catch((e) => console.warn('No se pudieron cargar algunos nombres de compradores:', e));
     return () => { activo = false; };
   }, [entradas, nombres]);
 

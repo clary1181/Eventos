@@ -95,7 +95,7 @@ export function PantallaEntradasVendidas() {
               </View>
               <View style={estilos.buscador}>
                 <Ionicons name="search-outline" size={20} color={Colores.textoSuave} />
-                <TextInput style={estilos.entradaBusqueda} value={busqueda} onChangeText={setBusqueda} placeholder="Buscar comprador" placeholderTextColor={Colores.textoSuave} />
+                <TextInput style={estilos.entradaBusqueda} value={busqueda} onChangeText={setBusqueda} placeholder="Buscar comprador" placeholderTextColor={Colores.textoSuave} maxLength={80} />
               </View>
               <View style={estilos.chips}>
                 <Chip texto="Todas" activo={filtro === 'todas'} alPulsar={() => setFiltro('todas')} />
